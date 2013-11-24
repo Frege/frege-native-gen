@@ -6,6 +6,7 @@ if the method is known to return a possible `null`. So this is just an utility s
 we don't have to write down all the methods by looking at Java signatures.
 
 **Example 1:** `java.awt.Point` in `ST`
+
 1. All public members are retained including public fields. 
 2. Overloaded constructors are resolved and seperated with `|`. 
 3. Overloaded methods are identified and appended with `'` for each variant.
@@ -32,6 +33,7 @@ data Point = native java.awt.Point where
   native translate :: Mutable s Point -> Int -> Int -> ST s ()
 ```
 **Example 2:** `java.util.HashMap` in `ST`
+
 Type parameters for generic classes and methods are correctly resolved, so are nested classes (`java.util.Map.Entry`).
 ```
 data HashMap k v = native java.util.HashMap where
@@ -57,6 +59,7 @@ data HashMap k v = native java.util.HashMap where
 
 ```
 **Example 3:** `java.util.Locale` as `pure`
+
 1. Public static fields are resolved
 2. Though the class itself is pure, if any of the parameters for a method is impure such as arrays or other impure types
 or if the method is returning `void` or doesn't take any parameters or throws any checked `Exception`,
@@ -131,6 +134,7 @@ data Locale = pure native java.util.Locale where
 ```
 
 **Example 4:** `java.io.FileInputStream` in `IO`
+
 Checked exceptions are retained in `throws`.
 ```
 data FileInputStream = native java.io.FileInputStream where
@@ -150,6 +154,7 @@ data FileInputStream = native java.io.FileInputStream where
 ```
 
 ##KnownTypes.properties##
+
 All the examples above use a properties file which indicates all the Java classes, their purity and their optional new names in Frege code.
 
 ```
@@ -191,6 +196,7 @@ java.util.Locale$Builder=st,LocaleBuilder
 ```
 
 ##How to run##
-1) Download `native-gen-XX.jar` from [releases](https://github.com/Frege/native-gen/releases) where `XX` is the version
-and `KnownTypes.properties` from [here](https://github.com/Frege/native-gen/blob/master/KnownTypes.properties)
-2) Run `java -jar native-gen-XX.jar java.util.HashSet KnownTypes.properties`
+
+1. Download `native-gen-XX.jar` from [releases](https://github.com/Frege/native-gen/releases) where `XX` is the version
+and `KnownTypes.properties` from [here](https://github.com/Frege/native-gen/blob/master/KnownTypes.properties).
+2. Run `java -jar native-gen-XX.jar java.util.HashSet KnownTypes.properties`
