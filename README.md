@@ -1,9 +1,14 @@
 #Frege code generator for Java classes#
-This project aims to reduce the manual effort of defining native bindings for Java classes in Frege. Given a Java class and it's purity whether
-it is pure or mutable(`ST`) or doing IO(`IO`), this will generate corresponding Frege code for that class.
+This project aims to reduce the manual effort for defining native bindings for Java classes in Frege. 
+
+Given a Java class and it's purity, whether it is pure or mutable(`ST`) or doing IO(`IO`), 
+this will generate corresponding Frege code for that class.
 The generated code may still not compile due to other unknown types or you might want to wrap the return type in `Maybe`
 if the method is known to return a possible `null`. So this is just an utility so that
-we don't have to write down all the methods by looking at Java signatures.
+we don't have to look at every Java method signatures and write down the corresponding Frege type signatures 
+which is both time consuming and more error-prone. 
+
+Here are some examples on how this works:
 
 **Example 1:** `java.awt.Point` in `ST`
 
@@ -165,7 +170,7 @@ data FileInputStream = native java.io.FileInputStream where
 The name used here as the key is the class name returned by `java.lang.Class.getName()`
 for that class. Nested classes can also be mentioned with their name as returned by `java.lang.Class.getName()`.
 * If a class is missing in this file but being used in the class we are generating, the missing class is assumed to be pure and
-the class's unqualified name will be used in the generated code.
+the unqualified name of the class will be used in the generated code.
 
 ```
 int=pure,Int
@@ -215,5 +220,7 @@ and `KnownTypes.properties` from [here](https://github.com/Frege/native-gen/blob
    or if you want to call it a different name in Frege, add `java.util.HashSet=st,JHashSet`
 3. Run `java -jar native-gen-XX.jar java.util.HashSet KnownTypes.properties`
 
-   If you want to generate for a third party class (In this example, a class from Guava library)
-   Run `java -cp guava-15.0.jar:native-gen-XX.jar frege.nativegen.NativeGen com.google.common.collect.ImmutableCollection KnownTypes.properties`
+   To generate for a third party class (In this example, a class from Guava library):
+```
+   java -cp guava-15.0.jar:native-gen-XX.jar frege.nativegen.NativeGen com.google.common.collect.ImmutableCollection KnownTypes.properties
+```
