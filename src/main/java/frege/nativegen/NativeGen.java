@@ -302,7 +302,7 @@ public final class NativeGen {
             final NativeGen gen = new NativeGen(Class.forName(args[0]), knownTypes);
             System.out.println(gen.toFrege());
         } else {
-            System.err.println("Usage: Nativegen className [fileName]");
+            System.err.println("Error: Missing Java class name and an optional properties file name!");
         }
 
     }
