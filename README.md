@@ -1,5 +1,5 @@
 #Frege code generator for Java classes#
-This is to ease the process of defining native bindings for Java classes in Frege. Given a Java class and it's purity whether
+This project aims to reduce the manual effort of defining native bindings for Java classes in Frege. Given a Java class and it's purity whether
 it is pure or mutable(`ST`) or doing IO(`IO`), this will generate corresponding Frege code for that class.
 The generated code may still not compile due to other unknown types or you might want to wrap the return type in `Maybe`
 if the method is known to return a possible `null`. So this is just an utility so that
@@ -7,9 +7,11 @@ we don't have to write down all the methods by looking at Java signatures.
 
 **Example 1:** `java.awt.Point` in `ST`
 
-1. All public members are retained including public fields. 
-2. Overloaded constructors are resolved and seperated with `|`. 
-3. Overloaded methods are identified and appended with `'` for each variant.
+1. All public members are resolved including public fields.
+2. Overloaded constructors are resolved and seperated with `|` in the types.
+3. Overloaded methods are identified and appended with repeated `'` for each variant in their name. The reason the representation
+   differs from that of overloaded constructors is to allow different purity annotations among overloaded methods based on the purity
+   of method parameters and return type.
 
 ```
 data Point = native java.awt.Point where
@@ -34,7 +36,10 @@ data Point = native java.awt.Point where
 ```
 **Example 2:** `java.util.HashMap` in `ST`
 
-Type parameters for generic classes and methods are correctly resolved, so are nested classes (`java.util.Map.Entry`).
+Type parameters for generic classes and methods are correctly resolved, so are nested classes (`java.util.Map.Entry`). The
+naming convention for nested classes in the generated code is to prepend the class name with the parent class name and an underscore
+but it can be overridden to have a different name (See `KnownTypes.properties` below).
+
 ```
 data HashMap k v = native java.util.HashMap where
 
@@ -60,10 +65,10 @@ data HashMap k v = native java.util.HashMap where
 ```
 **Example 3:** `java.util.Locale` as `pure`
 
-1. Public static fields are resolved
+1. Public static fields are resolved and generated with all lowercase characters.
 2. Though the class itself is pure, if any of the parameters for a method is impure such as arrays or other impure types
 or if the method is returning `void` or doesn't take any parameters or throws any checked `Exception`,
-the method will be considered as impure (here for example, `getAvailableLocales`, `getExtensionKeys`)
+the method will be considered as impure (here for example, `getAvailableLocales`, `getExtensionKeys`).
 
 ```
 data Locale = pure native java.util.Locale where
@@ -135,7 +140,8 @@ data Locale = pure native java.util.Locale where
 
 **Example 4:** `java.io.FileInputStream` in `IO`
 
-Checked exceptions are retained in `throws`.
+Checked exceptions are identified and a `throws` is appended to the function type with all the checked exceptions.
+
 ```
 data FileInputStream = native java.io.FileInputStream where
 
@@ -155,7 +161,11 @@ data FileInputStream = native java.io.FileInputStream where
 
 ##KnownTypes.properties##
 
-All the examples above use a properties file which indicates all the Java classes, their purity and their optional new names in Frege code.
+* All the examples above use a properties file which indicates all the Java classes, their purity and their optional new names in Frege code.
+The name used here as the key is the class name returned by `java.lang.Class.getName()`
+for that class. Nested classes can also be mentioned with their name as returned by `java.lang.Class.getName()`.
+* If a class is missing in this file but being used in the class we are generating, the missing class is assumed to be pure and
+the class's unqualified name will be used in the generated code.
 
 ```
 int=pure,Int
@@ -199,4 +209,11 @@ java.util.Locale$Builder=st,LocaleBuilder
 
 1. Download `native-gen-XX.jar` from [releases](https://github.com/Frege/native-gen/releases) where `XX` is the version
 and `KnownTypes.properties` from [here](https://github.com/Frege/native-gen/blob/master/KnownTypes.properties).
-2. Run `java -jar native-gen-XX.jar java.util.HashSet KnownTypes.properties`
+2. Mention your class name along with it's purity in **KnownTypes.properties**.
+
+   For example, to generate for `java.util.HashSet`, add `java.util.HashSet=st`
+   or if you want to call it a different name in Frege, add `java.util.HashSet=st,JHashSet`
+3. Run `java -jar native-gen-XX.jar java.util.HashSet KnownTypes.properties`
+
+   If you want to generate for a third party class (In this example, a class from Guava library)
+   Run `java -cp guava-15.0.jar:native-gen-XX.jar frege.nativegen.NativeGen com.google.common.collect.ImmutableCollection KnownTypes.properties`
