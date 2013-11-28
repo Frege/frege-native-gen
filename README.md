@@ -13,10 +13,7 @@ Here are some examples on how this works:
 **Example 1:** `java.awt.Point` in `ST`
 
 1. All public members are resolved including public fields.
-2. Overloaded constructors are resolved and seperated with `|` in the types.
-3. Overloaded methods are identified and appended with repeated `'` for each variant in their name. The reason the representation
-   differs from that of overloaded constructors is to allow different purity annotations among overloaded methods based on the purity
-   of method parameters and return type.
+2. Overloaded constructors and methods are grouped and their types are seperated with `|`.
 
 ```
 data Point = native java.awt.Point where
@@ -24,20 +21,28 @@ data Point = native java.awt.Point where
   native x ".x" :: Mutable s Point -> ST s Int
   native y ".y" :: Mutable s Point -> ST s Int
 
-  native new :: () -> STMutable s Point
+  native new :: Int -> Int -> STMutable s Point
               | Mutable s Point -> STMutable s Point
-              | Int -> Int -> STMutable s Point
+              | () -> STMutable s Point
 
   native equals :: Mutable s Point -> Object -> ST s Bool
+
   native getLocation :: Mutable s Point -> STMutable s Point
+
   native getX :: Mutable s Point -> ST s Double
+
   native getY :: Mutable s Point -> ST s Double
+
   native move :: Mutable s Point -> Int -> Int -> ST s ()
+
   native setLocation :: Mutable s Point -> Mutable s Point -> ST s ()
-  native setLocation' setLocation :: Mutable s Point -> Int -> Int -> ST s ()
-  native setLocation'' setLocation :: Mutable s Point -> Double -> Double -> ST s ()
+                      | Mutable s Point -> Int -> Int -> ST s ()
+                      | Mutable s Point -> Double -> Double -> ST s ()
+
   native toString :: Mutable s Point -> ST s String
+
   native translate :: Mutable s Point -> Int -> Int -> ST s ()
+
 ```
 **Example 2:** `java.util.HashMap` in `ST`
 
@@ -54,17 +59,29 @@ data HashMap k v = native java.util.HashMap where
               | Int -> Float -> STMutable s (HashMap k v)
 
   native clear :: Mutable s (HashMap k v) -> ST s ()
+
   native clone :: Mutable s (HashMap k v) -> ST s Object
+
   native containsKey :: Mutable s (HashMap k v) -> Object -> ST s Bool
+
   native containsValue :: Mutable s (HashMap k v) -> Object -> ST s Bool
+
   native entrySet :: Mutable s (HashMap k v) -> STMutable s (Set (Map_Entry k v))
+
   native get :: Mutable s (HashMap k v) -> Object -> ST s v
+
   native isEmpty :: Mutable s (HashMap k v) -> ST s Bool
+
   native keySet :: Mutable s (HashMap k v) -> STMutable s (Set k)
+
   native put :: Mutable s (HashMap k v) -> k -> v -> ST s v
+
   native putAll :: Mutable s (HashMap k v) -> Mutable s (Map k v) -> ST s ()
+
   native remove :: Mutable s (HashMap k v) -> Object -> ST s v
+
   native size :: Mutable s (HashMap k v) -> ST s Int
+
   native values :: Mutable s (HashMap k v) -> STMutable s (Collection v)
 
 ```
@@ -74,6 +91,10 @@ data HashMap k v = native java.util.HashMap where
 2. Though the class itself is pure, if any of the parameters for a method is impure such as arrays or other impure types
 or if the method is returning `void` or doesn't take any parameters or throws any checked `Exception`,
 the method will be considered as impure (here for example, `getAvailableLocales`, `getExtensionKeys`).
+3. Due to grouping of overloaded methods, if any of the overloaded methods is pure but others are impure, the pure method will be considered as impure. For example, here, 
+   `native getDefault java.util.Locale.getDefault :: LocaleCategory -> ST s Locale`
+    is supposed to be pure because both `LocaleCategory` and `Locale` are pure but since the other overloaded version,
+    `() -> ST s Locale` is impure, the first version is also modified to be impure (in `ST`).
 
 ```
 data Locale = pure native java.util.Locale where
@@ -108,38 +129,64 @@ data Locale = pure native java.util.Locale where
               | String -> String -> String -> ST s Locale
 
   pure native clone :: Locale -> Object
+
   pure native equals :: Locale -> Object -> Bool
+
   pure native forLanguageTag java.util.Locale.forLanguageTag :: String -> Locale
+
   native getAvailableLocales java.util.Locale.getAvailableLocales :: () -> STMutable s LocaleArr
+
   pure native getCountry :: Locale -> String
-  pure native getDefault java.util.Locale.getDefault :: LocaleCategory -> Locale
-  native getDefault' java.util.Locale.getDefault :: () -> ST s Locale
+
+  native getDefault java.util.Locale.getDefault :: LocaleCategory -> ST s Locale
+                                                 | () -> ST s Locale
+
   pure native getDisplayCountry :: Locale -> String
-  pure native getDisplayCountry' getDisplayCountry :: Locale -> Locale -> String
+                                 | Locale -> Locale -> String
+
   pure native getDisplayLanguage :: Locale -> String
-  pure native getDisplayLanguage' getDisplayLanguage :: Locale -> Locale -> String
+                                  | Locale -> Locale -> String
+
   pure native getDisplayName :: Locale -> Locale -> String
-  pure native getDisplayName' getDisplayName :: Locale -> String
+                              | Locale -> String
+
   pure native getDisplayScript :: Locale -> String
-  pure native getDisplayScript' getDisplayScript :: Locale -> Locale -> String
+                                | Locale -> Locale -> String
+
   pure native getDisplayVariant :: Locale -> Locale -> String
-  pure native getDisplayVariant' getDisplayVariant :: Locale -> String
+                                 | Locale -> String
+
   pure native getExtension :: Locale -> Char -> String
+
   native getExtensionKeys :: Locale -> STMutable s (Set Character)
+
   pure native getISO3Country :: Locale -> String
+
   pure native getISO3Language :: Locale -> String
+
   native getISOCountries java.util.Locale.getISOCountries :: () -> STMutable s StringArr
+
   native getISOLanguages java.util.Locale.getISOLanguages :: () -> STMutable s StringArr
+
   pure native getLanguage :: Locale -> String
+
   pure native getScript :: Locale -> String
+
   native getUnicodeLocaleAttributes :: Locale -> STMutable s (Set String)
+
   native getUnicodeLocaleKeys :: Locale -> STMutable s (Set String)
+
   pure native getUnicodeLocaleType :: Locale -> String -> String
+
   pure native getVariant :: Locale -> String
+
   pure native hashCode :: Locale -> Int
+
   native setDefault java.util.Locale.setDefault :: Locale -> ST s ()
-  native setDefault' java.util.Locale.setDefault :: LocaleCategory -> Locale -> ST s ()
+                                                 | LocaleCategory -> Locale -> ST s ()
+
   pure native toLanguageTag :: Locale -> String
+
   pure native toString :: Locale -> String
 ```
 
@@ -155,12 +202,17 @@ data FileInputStream = native java.io.FileInputStream where
               | FileDescriptor -> IOMutable FileInputStream
 
   native available :: MutableIO FileInputStream -> IO Int throws IOException
+
   native close :: MutableIO FileInputStream -> IO () throws IOException
+
   native getChannel :: MutableIO FileInputStream -> IOMutable FileChannel
+
   native getFD :: MutableIO FileInputStream -> IO FileDescriptor throws IOException
+
   native read :: MutableIO FileInputStream -> IO Int throws IOException
-  native read' read :: MutableIO FileInputStream -> MutableIO ByteArr -> IO Int throws IOException
-  native read'' read :: MutableIO FileInputStream -> MutableIO ByteArr -> Int -> Int -> IO Int throws IOException
+               | MutableIO FileInputStream -> MutableIO ByteArr -> IO Int throws IOException
+               | MutableIO FileInputStream -> MutableIO ByteArr -> Int -> Int -> IO Int throws IOException
+
   native skip :: MutableIO FileInputStream -> Long -> IO Long throws IOException
 ```
 
