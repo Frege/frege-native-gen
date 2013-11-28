@@ -400,41 +400,70 @@ public final class NativeGen {
         if (!fields.isEmpty()) out.println();
 
         final List<FunctionType> constructors = withPurity(constructors());
-        final ListIterator<FunctionType> citr = constructors.listIterator();
-        while (citr.hasNext()) {
-            out.print("  ");
-            if (citr.nextIndex() == 0) {
-                out.print("native new :: ");
-            } else {
-                out.print("            | ");
-            }
-            out.println(functionTypeToSrc(citr.next()));
-        }
-        if (!constructors.isEmpty()) out.println();
+        out.print(srcWithGroup(constructors));
 
         final Map<String, List<FunctionType>> methodMap = groupByName(withPurity(methods()));
         for (final Map.Entry<String, List<FunctionType>> entry: methodMap.entrySet()) {
-            final ListIterator<FunctionType> fitr = entry.getValue().listIterator();
-            while (fitr.hasNext()) {
-                out.print("  ");
-                int index = fitr.nextIndex();
-                out.println(overloadedMethodToSrc(fitr.next(), index));
-            }
+            final List<FunctionType> functions = entry.getValue();
+            out.print(srcWithGroup(functions));
 
         }
         out.flush();
         return swriter.toString();
     }
 
-    private String overloadedMethodToSrc(final FunctionType f, final int index) {
-        final String apos = repeatStr('\'', index);
-        final String functionName = f.name + apos;
-        final String nativeName = index != 0 || !f.name.equals(f.nativeName) ? " " + f.nativeName : "";
-        return (f.returnType.purity == Purity.PURE ? "pure native " : "native ")
-                + functionName
-                + nativeName
-                + " :: "
-                + functionTypeToSrc(f);
+    private String srcWithGroup(final List<FunctionType> functions) {
+        final String src;
+        if (!functions.isEmpty()) {
+            final StringWriter swriter = new StringWriter();
+            final PrintWriter out = new PrintWriter(swriter);
+            final ListIterator<FunctionType> fitr = functions.listIterator();
+            final FunctionType firstFunction = fitr.next();
+            final String functionName = firstFunction.name +
+                    (firstFunction.name.equals(firstFunction.nativeName) ? "" : " " + firstFunction.nativeName);
+            final boolean isConstructor = firstFunction.name.equals("new");
+            final boolean allPure = !isConstructor && allWithPurity(functions, Purity.PURE);
+            final FunctionType newFirstFunction;
+            // Since other overloaded versions are impure, change purity for this function also
+            if (!allPure && firstFunction.returnType.purity == Purity.PURE) {
+                newFirstFunction = firstFunction.withReturnType(returnTypeWithPurity(firstFunction, Purity.ST));
+            } else {
+                newFirstFunction = firstFunction;
+            }
+            final String startingLine = String.format(
+                    "  %snative %s :: %s", allPure ? "pure " : "", functionName,
+                    functionTypeToSrc(newFirstFunction));
+            out.println(startingLine);
+
+            while (fitr.hasNext()) {
+                out.print(repeatStr(' ', startingLine.indexOf("::")) + " | ");
+                final FunctionType function = fitr.next();
+                final FunctionType newFunction;
+                // Since other overloaded versions are impure, change purity for this function also
+                if (!allPure && function.returnType.purity == Purity.PURE ) {
+                    newFunction = function.withReturnType(returnTypeWithPurity(function, Purity.ST));
+                } else {
+                    newFunction = function;
+                }
+                out.println(functionTypeToSrc(newFunction));
+            }
+            out.println();
+            src = swriter.toString();
+        } else {
+            src = "";
+        }
+        return src;
+    }
+
+    private boolean allWithPurity(final List<FunctionType> functions, final Purity purity) {
+        boolean match = true;
+        for (final FunctionType function: functions) {
+            if (function.returnType.purity != purity) {
+                match = false;
+                break;
+            }
+        }
+        return match;
     }
 
     private String repeatStr(char c, int count) {
