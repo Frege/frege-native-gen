@@ -4,6 +4,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.io.StringWriter;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -393,29 +394,45 @@ public final class NativeGen {
     public String toFrege() {
         final StringWriter swriter = new StringWriter();
         final PrintWriter out = new PrintWriter(swriter);
-
         final FregeType thisType = fregeTypeWithTypeParams(clazz);
-        out.println(String.format("data %s = %snative %s where",
-                thisType.type,
-                thisType.purity.isPure() ? "pure " : "" , clazz.getCanonicalName()));
-        out.println();
+        if (Throwable.class.isAssignableFrom(clazz)) {
+            out.printf("data %s = pure native %s\n", addParenthesis(thisType.type), clazz.getCanonicalName());
+            out.println("derive Exceptional " + addParenthesis(thisType.type));
+        } else {
+            final List<FunctionType> fields = withPurity(fields());
+            final List<FunctionType> constructors = withPurity(constructors());
+            final List<FunctionType> methods = withPurity(methods());
+            final boolean hasMembers = !fields.isEmpty() || !constructors.isEmpty() || !methods.isEmpty();
 
-        final List<FunctionType> fields = fields();
-        for (final FunctionType type: withPurity(fields)) {
-            out.print("  ");
-            out.println(functionToSrc(type));
+            out.printf("data %s = %snative %s%s\n",
+                    thisType.type,
+                    thisType.purity.isPure() ? "pure " : "" ,
+                    clazz.getCanonicalName(),
+                    hasMembers ? " where" : "");
+            out.println();
+
+            for (final FunctionType type: fields) {
+                out.print("  ");
+                out.println(functionToSrc(type));
+            }
+            if (!fields.isEmpty()) out.println();
+
+            out.print(srcWithGroup(constructors));
+
+            final Map<String, List<FunctionType>> methodMap = groupByName(methods);
+            for (final Map.Entry<String, List<FunctionType>> entry: methodMap.entrySet()) {
+                final List<FunctionType> functions = entry.getValue();
+                out.print(srcWithGroup(functions));
+
+            }
+
+            if (Serializable.class.isAssignableFrom(clazz)) {
+                out.println("instance Serializable " + addParenthesis(thisType.type));
+            } else if (Cloneable.class.isAssignableFrom(clazz)) {
+                out.println("instance Cloneable " + addParenthesis(thisType.type));
+            }
         }
-        if (!fields.isEmpty()) out.println();
 
-        final List<FunctionType> constructors = withPurity(constructors());
-        out.print(srcWithGroup(constructors));
-
-        final Map<String, List<FunctionType>> methodMap = groupByName(withPurity(methods()));
-        for (final Map.Entry<String, List<FunctionType>> entry: methodMap.entrySet()) {
-            final List<FunctionType> functions = entry.getValue();
-            out.print(srcWithGroup(functions));
-
-        }
         out.flush();
         return swriter.toString();
     }
