@@ -7,7 +7,9 @@ import org.junit.Test;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static frege.nativegen.NativeGen.FregeType;
@@ -39,6 +41,7 @@ public class NativeGenTest {
         knownTypes.put("java.nio.channels.FileChannel", new FregeType("FileChannel", java.nio.channels.FileChannel.class, Purity.IO));
         knownTypes.put("java.io.File", new FregeType("File", java.io.File.class, Purity.IO));
         knownTypes.put("java.util.Collection", new FregeType("Collection", java.util.Collection.class, Purity.ST));
+        knownTypes.put("java.util.List", new FregeType("List", java.util.List.class, Purity.ST));
         knownTypes.put("java.util.ArrayList", new FregeType("ArrayList", java.util.ArrayList.class, Purity.ST));
         knownTypes.put("java.util.LinkedList", new FregeType("LinkedList", java.util.LinkedList.class, Purity.ST));
         knownTypes.put("java.util.Iterator", new FregeType("Iterator", java.util.Iterator.class, Purity.ST));
@@ -151,6 +154,17 @@ public class NativeGenTest {
         final Method method = clazz.getDeclaredMethod("getTypeParameters");
         final String actual = gen.functionToSrc(gen.withPurity(gen.toFregeType(method)));
         final String expected = "native getTypeParameters :: Class t -> STMutable s (TypeVariableArr (Class t))";
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testBounds() throws NoSuchMethodException {
+        final Class<?> clazz = java.util.Collections.class;
+        final NativeGen gen = new NativeGen(clazz, knownTypes);
+        // static <T> int java.util.Collections.binarySearch(List<? extends T> list, T key, Comparator<? super T> c)
+        final Method method = clazz.getDeclaredMethod("binarySearch", List.class, Object.class, Comparator.class);
+        final String actual = gen.functionToSrc(gen.withPurity(gen.toFregeType(method)));
+        final String expected = "native binarySearch java.util.Collections.binarySearch :: Mutable s (List t) -> t -> Comparator t -> ST s Int";
         assertEquals(expected, actual);
     }
 

@@ -113,7 +113,15 @@ public final class NativeGen {
     }
 
     public FregeType fregeType(WildcardType wildcard) {
-        return fregeType(wildcard.getUpperBounds()[0]);
+        final FregeType fregeType;
+        // Return most specific bound than just Object
+        final Type[] lowerBounds = wildcard.getLowerBounds();
+        if (lowerBounds.length != 0) {
+            fregeType = fregeType(lowerBounds[0]);
+        } else {
+            fregeType = fregeType(wildcard.getUpperBounds()[0]);
+        }
+        return fregeType;
     }
 
     private String fregeName(Class<?> cls) {
