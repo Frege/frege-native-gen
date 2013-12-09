@@ -400,7 +400,10 @@ public final class NativeGen {
             out.println("derive Exceptional " + addParenthesis(thisType.type));
         } else {
             final List<FunctionType> fields = withPurity(fields());
-            final List<FunctionType> constructors = withPurity(constructors());
+            final List<FunctionType> constructors =
+                    Modifier.isAbstract(clazz.getModifiers())
+                            ? Collections.<FunctionType>emptyList()
+                            : withPurity(constructors());
             final List<FunctionType> methods = withPurity(methods());
             final boolean hasMembers = !fields.isEmpty() || !constructors.isEmpty() || !methods.isEmpty();
 
