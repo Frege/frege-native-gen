@@ -25,7 +25,7 @@ data Point = native java.awt.Point where
 
   native new :: Int -> Int -> STMutable s Point
               | Mutable s Point -> STMutable s Point
-              | Mutable s () -> STMutable s Point
+              | () -> STMutable s Point
 
   native equals :: Mutable s Point -> Object -> ST s Bool
 
@@ -58,7 +58,7 @@ but it can be overridden to have a different name (See `types.properties` below)
 data HashMap k v = native java.util.HashMap where
 
   native new :: Mutable s (Map k v) -> STMutable s (HashMap k v)
-              | Mutable s () -> STMutable s (HashMap k v)
+              | () -> STMutable s (HashMap k v)
               | Int -> STMutable s (HashMap k v)
               | Int -> Float -> STMutable s (HashMap k v)
 
