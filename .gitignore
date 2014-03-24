@@ -2,11 +2,13 @@ bin/
 target/
 dist/
 .idea/
+.settings/
 
 *.class
 *.jar
 *~
 *#
+.classpath
 
 *.project
 *.iml

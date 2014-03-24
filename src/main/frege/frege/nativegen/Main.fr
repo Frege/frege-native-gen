@@ -1,0 +1,50 @@
+module frege.nativegen.Main where
+
+import frege.Prelude hiding (Class)
+import frege.nativegen.NativeGen
+import frege.nativegen.java.Lang
+import Data.Map as M()
+
+abstract data KnownTypesParser = KnownTypesParser
+  where
+    parseLine line
+      | (key, _:value) <- break (== '=') line.toList = do
+        clsMaybe <- classFor $ packed key
+        return $ fmap (\cls -> (cls.getName, parseValue cls (packed value))) clsMaybe
+    parseLine _ = return Nothing
+
+    parseKey key = classFor $ packed key
+
+    parseValue cls "" = FregeType (classToFregeName cls) cls.getName Pure
+    parseValue cls value = case break (== ',') value.toList of
+      (purity, []) -> FregeType (classToFregeName cls) cls.getName (parsePurity $ packed purity)
+      (purity, _:fname) -> FregeType (packed fname) cls.getName (parsePurity $ packed purity)
+
+    classToFregeName cls
+      | cls.isArray = "JArray " ++ cls.getComponentType.getCanonicalName
+      | cls.isPrimitive = packed . applyHead _.toUpperCase . toList $ cls.getName
+      | cls.isMemberClass = replace (unqualifiedName cls) "$" "_"
+      | otherwise = unqualifiedName cls
+
+    parsePurity "io" = Purity.IO
+    parsePurity "st" = Purity.ST
+    parsePurity _ = Purity.Pure
+
+    parseKnownTypes fileName = do
+      contents <- readFile fileName
+      assocMaybes <- mapM parseLine $ lines contents
+      return $ M.fromList $ catMaybes assocMaybes
+
+main [] = do
+  print "Enter class name: "
+  stdout.flush
+  className <- getLine
+  main [className]
+  
+main [className] = main [className, "types.properties"]
+
+main (className: typesFileName: _) = do
+  knownTypes <- KnownTypesParser.parseKnownTypes typesFileName
+  clazzEither <- Class.forName className
+  let clazz = either throw id clazzEither
+  println $ genFrege knownTypes clazz

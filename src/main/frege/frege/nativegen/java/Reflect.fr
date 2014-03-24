@@ -1,0 +1,61 @@
+module frege.nativegen.java.Reflect where
+
+import frege.Prelude hiding (Class)
+import frege.nativegen.java.Lang
+
+data TypeVariable = pure native java.lang.reflect.TypeVariable where
+  pure native getBounds :: TypeVariable -> JArray Type
+  pure native getGenericDeclaration :: TypeVariable -> GenericDeclaration
+  pure native getName :: TypeVariable -> String
+  pure native getClass "java.lang.reflect.TypeVariable.class" :: Class TypeVariable
+
+derive ArrayElement TypeVariable
+
+data Type = pure native java.lang.reflect.Type
+derive ArrayElement Type
+
+data GenericDeclaration =  pure native java.lang.reflect.GenericDeclaration where
+  pure native getTypeParameters :: GenericDeclaration -> JArray TypeVariable
+  
+data WildcardType = pure native java.lang.reflect.WildcardType where
+  pure native getLowerBounds :: WildcardType -> JArray Type
+  pure native getUpperBounds :: WildcardType -> JArray Type
+  pure native getClass "java.lang.reflect.WildcardType.class" :: Class WildcardType
+  
+data GenericArrayType = pure native java.lang.reflect.GenericArrayType where
+  pure native getGenericComponentType :: GenericArrayType -> Type
+  pure native getClass "java.lang.reflect.GenericArrayType.class" :: Class GenericArrayType
+  
+data ParameterizedType = pure native java.lang.reflect.ParameterizedType where
+  pure native getActualTypeArguments :: ParameterizedType -> JArray Type
+  pure native getOwnerType :: ParameterizedType -> Maybe Type
+  pure native getRawType :: ParameterizedType -> Type
+  pure native getClass "java.lang.reflect.ParameterizedType.class" :: Class ParameterizedType
+
+data Constructor = pure native java.lang.reflect.Constructor where
+  pure native getGenericParameterTypes :: Constructor -> JArray Type
+  pure native getGenericExceptionTypes :: Constructor -> JArray Type
+  pure native getDeclaringClass :: Constructor -> Class a
+  pure native isSynthetic :: Constructor -> Bool
+  pure native getModifiers :: Constructor -> Int
+    
+data Method = pure native java.lang.reflect.Method where
+  pure native getGenericParameterTypes :: Method -> JArray Type
+  pure native getGenericReturnType :: Method -> Type
+  pure native getModifiers :: Method -> Int
+  pure native getGenericExceptionTypes :: Method -> JArray Type
+  pure native getDeclaringClass :: Method -> Class a
+  pure native getName :: Method -> String
+  pure native isSynthetic :: Method -> Bool
+  pure native isBridge :: Method -> Bool
+
+data Field = pure native java.lang.reflect.Field where
+  pure native getModifiers :: Field -> Int
+  pure native getGenericType :: Field -> Type
+  pure native getName :: Field -> String 
+  pure native getDeclaringClass :: Field -> Class a
+  pure native isSynthetic :: Field -> Bool
+  
+data Modifier = pure native java.lang.reflect.Modifier where
+  pure native isStatic "java.lang.reflect.Modifier.isStatic" :: Int -> Bool
+  pure native isPublic "java.lang.reflect.Modifier.isPublic" :: Int -> Bool

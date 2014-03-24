@@ -1,0 +1,4 @@
+module frege.nativegen.java.IO where
+
+data JSerializable = native java.io.Serializable where
+  pure native javaClass "java.io.Serializable.class" :: Class JSerializable

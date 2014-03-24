@@ -1,0 +1,90 @@
+module frege.nativegen.java.Lang where
+
+import frege.Prelude hiding (Class)
+
+data Class a = pure native java.lang.Class where
+    pure  native getName    :: Class a -> String
+    native       forName java.lang.Class.forName
+                            :: String -> IO (ClassNotFoundException | Class a)
+    pure native isInstance :: Class a -> b -> Bool
+    pure native cast :: Class a -> b -> a
+    pure native isArray :: Class a -> Bool
+    pure native getComponentType :: Class a -> Class b
+    pure native isMemberClass :: Class a -> Bool
+    pure native getClass "java.lang.Class.class" :: Class (Class a)
+    pure native getTypeParameters :: Class a -> JArray TypeVariable
+    pure native asType "(java.lang.reflect.Type)" :: Class a -> Type
+    pure native getCanonicalName :: Class a -> String
+    pure native isAssignableFrom :: Class a -> Class b -> Bool
+    pure native isPrimitive :: Class a -> Bool
+    native getDeclaredMethod :: Class a -> String -> JArray (Class b) -> ST s Method throws NoSuchMethodException
+    pure native getDeclaredConstructors :: Class a -> JArray Constructor
+    pure native getDeclaredMethods :: Class a -> JArray Method
+    pure native getDeclaredFields :: Class a -> JArray Field
+    
+pure native asObject "(Object)" :: a -> Object
+
+data NoSuchMethodException = pure native java.lang.NoSuchMethodException
+derive Exceptional NoSuchMethodException
+
+pure native replaceFirst :: String -> String -> String -> String
+pure native replace :: String -> String -> String -> String
+
+data RuntimeException = pure native java.lang.RuntimeException
+data JInteger = pure native java.lang.Integer
+data JBoolean = pure native java.lang.Boolean
+data JByte = pure native java.lang.Byte
+data JCharacter = pure native java.lang.Character
+data JShort = pure native java.lang.Short
+data JLong = pure native java.lang.Long
+data JFloat = pure native java.lang.Float
+data JDouble = pure native java.lang.Double
+data JVoid = pure native java.lang.Void
+
+data JCloneable = native java.lang.Cloneable where
+  pure native javaClass "java.lang.Cloneable.class" :: Class JCloneable
+
+pure native throwableClass "java.lang.Throwable.class" :: Class Throwable
+pure native exceptionClass "java.lang.Exception.class" :: Class Exception
+pure native runtimeExceptionClass "java.lang.RuntimeException.class" :: Class RuntimeException
+
+pure native objectArrayClass "java.lang.Object[].class" :: Class (JArray Object)
+pure native intClass "int.class" :: Class JInteger
+pure native booleanClass "boolean.class" :: Class JBoolean
+pure native byteClass "byte.class" :: Class JByte
+pure native charClass "char.class" :: Class JCharacter
+pure native shortClass "short.class" :: Class JShort
+pure native longClass "long.class" :: Class JLong
+pure native floatClass "float.class" :: Class JFloat
+pure native doubleClass "double.class" :: Class JDouble
+pure native voidClass "void.class" :: Class JVoid
+pure native objectClass "java.lang.Object.class" :: Class Object
+
+classFor :: String -> IO (Maybe (Class Object))
+classFor "int" = return . Just $ intClass
+classFor "boolean" = return . Just $ booleanClass
+classFor "byte" = return . Just $ byteClass
+classFor "char" = return . Just $ charClass
+classFor "short" = return . Just $ shortClass
+classFor "long" = return . Just $ longClass
+classFor "float" = return . Just $ floatClass
+classFor "double" = return . Just $ doubleClass
+classFor "void" = return . Just $ voidClass
+classFor s = either (const Nothing) Just <$> Class.forName s
+
+(<:?) :: a -> Class b -> Bool
+a <:? clazz = clazz.isInstance a
+
+infixl 1 `<:?`
+
+(@:) :: a -> Class b -> b
+a @: clazz = clazz.cast a
+
+infixl 1 `@:`
+
+-- Forward declarations
+protected data Constructor = pure native java.lang.reflect.Constructor
+protected data Method = pure native java.lang.reflect.Method
+protected data Field = pure native java.lang.reflect.Field
+protected data Type = pure native java.lang.reflect.Type
+protected data TypeVariable = pure native java.lang.reflect.TypeVariable
