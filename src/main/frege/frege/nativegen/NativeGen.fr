@@ -161,7 +161,7 @@ constructorToFregeFunction m constructor = FunctionType params returns exceps "n
     clazz = constructor.getDeclaringClass
     returns = thisType
     params = case paramTypes of
-      [] -> [FregeType "()" voidClass.getName ST]
+      [] -> [FregeType "()" voidClass.getName Pure]
       _ -> paramTypes  
     
 methodToFregeFunction :: M.Map String FregeType -> Method -> FunctionType                            
