@@ -70,7 +70,13 @@ classFor "long" = return . Just $ longClass
 classFor "float" = return . Just $ floatClass
 classFor "double" = return . Just $ doubleClass
 classFor "void" = return . Just $ voidClass
-classFor s = either (const Nothing) Just <$> Class.forName s
+classFor s = do
+    sys   <- JavaClassLoader.getSystemClassLoader 
+    either (const Nothing) Just <$> JavaClassLoader.loadClass sys s
+
+data JavaClassLoader = mutable native java.lang.ClassLoader where
+    native loadClass :: ClassLoader -> String -> IO (ClassNotFoundException | Class a)
+    native getSystemClassLoader "java.lang.ClassLoader.getSystemClassLoader()" :: IO ClassLoader
 
 (<:?) :: a -> Class b -> Bool
 a <:? clazz = clazz.isInstance a
