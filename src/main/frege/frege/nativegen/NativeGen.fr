@@ -1,6 +1,6 @@
 module frege.nativegen.NativeGen where
 
-import frege.Prelude hiding (Class)
+import frege.Prelude hiding (Class, ClassLoader)
 import frege.nativegen.java.Reflect
 import frege.nativegen.java.Lang
 import frege.nativegen.java.IO

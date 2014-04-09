@@ -1,6 +1,6 @@
 module frege.nativegen.java.Lang where
 
-import frege.Prelude hiding (Class)
+import frege.Prelude hiding (Class, ClassLoader)
 
 data Class a = pure native java.lang.Class where
     pure  native getName    :: Class a -> String
@@ -71,10 +71,10 @@ classFor "float" = return . Just $ floatClass
 classFor "double" = return . Just $ doubleClass
 classFor "void" = return . Just $ voidClass
 classFor s = do
-    sys   <- JavaClassLoader.getSystemClassLoader 
-    either (const Nothing) Just <$> JavaClassLoader.loadClass sys s
+    sys   <- ClassLoader.getSystemClassLoader
+    either (const Nothing) Just <$> sys.loadClass s
 
-data JavaClassLoader = mutable native java.lang.ClassLoader where
+data ClassLoader = mutable native java.lang.ClassLoader where
     native loadClass :: ClassLoader -> String -> IO (ClassNotFoundException | Class a)
     native getSystemClassLoader "java.lang.ClassLoader.getSystemClassLoader()" :: IO ClassLoader
 
