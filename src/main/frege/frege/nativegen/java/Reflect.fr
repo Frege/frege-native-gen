@@ -1,6 +1,6 @@
 module frege.nativegen.java.Reflect where
 
-import frege.Prelude hiding (Class)
+import frege.Prelude hiding (Class, ClassLoader)
 import frege.nativegen.java.Lang
 
 data TypeVariable = pure native java.lang.reflect.TypeVariable where
