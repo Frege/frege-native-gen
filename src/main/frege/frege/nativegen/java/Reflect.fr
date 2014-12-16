@@ -59,3 +59,4 @@ data Field = pure native java.lang.reflect.Field where
 data Modifier = pure native java.lang.reflect.Modifier where
   pure native isStatic "java.lang.reflect.Modifier.isStatic" :: Int -> Bool
   pure native isPublic "java.lang.reflect.Modifier.isPublic" :: Int -> Bool
+  pure native isAbstract "java.lang.reflect.Modifier.isAbstract" :: Int -> Bool

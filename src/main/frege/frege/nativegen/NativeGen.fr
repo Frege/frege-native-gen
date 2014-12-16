@@ -37,7 +37,6 @@ data FunctionType = FunctionType
       | any ((==) IO . FregeType.purity) f.params = IO
       | f.returns.jtype == voidClass.getName = ST
       | not $ null f.exceptions = ST
-      | f.jname == "new" = ST
       | f.returns.purity == ST = ST
       | any ((==) ST . FregeType.purity) f.params = ST
       | any ((==) voidClass.getName . FregeType.jtype) f.params = ST
@@ -74,11 +73,15 @@ data FunctionType = FunctionType
              | otherwise = ""
              
     showName :: FunctionType -> String
-    showName f = purity ++ f.name ++ nativename
+    showName f = purity ++ escape f.name ++ nativename
       where
         purity = if f.returns.purity == Purity.Pure then "pure native " else "native "
-        nativename = if f.name == f.jname then "" else " " ++ f.jname
-                        
+        nativename = if f.name == f.jname then "" else " \"" ++ f.jname ++ "\""
+
+    escape :: String -> String
+    escape s | s `elem` keywords = "j" ++ s ++ "'"
+             | otherwise         = s
+
 instance Show FunctionType where
   show f = FunctionType.showName f ++ " :: " ++ FunctionType.showSignature f
 
@@ -223,6 +226,7 @@ fregeTypeNames :: M.Map String FregeType -> [TypeVariable] -> String
 fregeTypeNames m types = unwords $ map (FregeType.name . typeVarToFregeType m) types
                    
 constructorsToFregeTypes :: M.Map String FregeType -> Class a -> [FunctionType]
+constructorsToFregeTypes _ clazz | Modifier.isAbstract clazz.getModifiers = []
 constructorsToFregeTypes m clazz = 
   takeFirst . groupOverloaded . map toFunction . filter wanted $ clazz.getDeclaredConstructors.toList 
     where
@@ -330,3 +334,8 @@ indent n s = let spaces = packed (replicate n ' ') in spaces ++ s
 
 applyHead _ [] = []
 applyHead f (x: xs) = f x : xs
+
+keywords = ["abstract", "case", "class", "data", "derive", "do", "else", "false", "forall",
+            "if", "import", "in", "infix", "infixl", "infixr", "instance", "let", "mutable",
+            "native", "of", "package", "module", "private", "protected", "pure", "public",
+            "then", "throws", "true", "type", "where"]
