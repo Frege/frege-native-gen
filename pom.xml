@@ -13,7 +13,8 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<frege.plugin.version>1.0.5</frege.plugin.version>
-		<frege.version>3.21.440-gd7ba043</frege.version>
+		<frege.version>3.22.324-g630677b</frege.version>
+		<!--<frege.version>3.22.367-g2737683</frege.version>-->
 	</properties>
 
 	<dependencies>
@@ -25,7 +26,7 @@
 		</dependency>
 
 		<dependency>
-			<groupId>frege</groupId>
+			<groupId>com.theoryinpractise.frege</groupId>
 			<artifactId>frege</artifactId>
 			<version>${frege.version}</version>
 		</dependency>
