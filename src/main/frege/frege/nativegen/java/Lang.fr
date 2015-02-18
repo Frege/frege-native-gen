@@ -84,10 +84,8 @@ a <:? clazz = clazz.isInstance a
 
 infixl 1 `<:?`
 
-(@:) :: a -> Class b -> b
-a @: clazz = clazz.cast a
-
-infixl 1 `@:`
+asInstanceOf :: a -> Class b -> b
+a `asInstanceOf` clazz = clazz.cast a
 
 -- Forward declarations
 protected data Constructor = pure native java.lang.reflect.Constructor

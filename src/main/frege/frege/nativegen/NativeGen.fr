@@ -113,7 +113,7 @@ genericArrayTypeToFregeType m arrayType = FregeType
       compType = arrayType.getGenericComponentType
       compFregeType = typeToFregeType m compType
       typeName 
-        | compType <:? TypeVariable.getClass = let typeVar = compType @: TypeVariable.getClass
+        | compType <:? TypeVariable.getClass = let typeVar = compType `asInstanceOf` TypeVariable.getClass
                                                in "JArray " ++ typeVar.getName.toLowerCase
         | otherwise = "JArray " ++ addParens compFregeType.name
 
@@ -146,11 +146,11 @@ classToFregeType m clazz = maybe unknown f $ M.lookup clazz.getName m
 
 typeToFregeType :: M.Map String FregeType -> Type -> FregeType
 typeToFregeType m jtype
-  | jtype <:? TypeVariable.getClass = typeVarToFregeType m $ jtype @: TypeVariable.getClass
-  | jtype <:? WildcardType.getClass = wildcardToFregeType m $ jtype @: WildcardType.getClass
-  | jtype <:? GenericArrayType.getClass = genericArrayTypeToFregeType m $ jtype @: GenericArrayType.getClass
-  | jtype <:? ParameterizedType.getClass = parameterizedTypeToFregeType m $ jtype @: ParameterizedType.getClass
-  | jtype <:? Class.getClass = classToFregeType m $ jtype @: Class.getClass
+  | jtype <:? TypeVariable.getClass = typeVarToFregeType m $ jtype `asInstanceOf` TypeVariable.getClass
+  | jtype <:? WildcardType.getClass = wildcardToFregeType m $ jtype `asInstanceOf` WildcardType.getClass
+  | jtype <:? GenericArrayType.getClass = genericArrayTypeToFregeType m $ jtype `asInstanceOf` GenericArrayType.getClass
+  | jtype <:? ParameterizedType.getClass = parameterizedTypeToFregeType m $ jtype `asInstanceOf` ParameterizedType.getClass
+  | jtype <:? Class.getClass = classToFregeType m $ jtype `asInstanceOf` Class.getClass
   | otherwise = FregeType "Object" objectClass.getName Pure
 
 constructorToFregeFunction :: M.Map String FregeType -> Constructor -> FunctionType
@@ -202,7 +202,7 @@ checked typ
     | typ <:? Class.getClass = isException && not isRuntimeException 
     | otherwise = false
   where
-    exception = typ @: Class.getClass
+    exception = typ `asInstanceOf` Class.getClass
     isException = exceptionClass.isAssignableFrom exception
     isRuntimeException  = runtimeExceptionClass.isAssignableFrom exception
         
