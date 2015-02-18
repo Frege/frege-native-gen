@@ -35,12 +35,10 @@ data FunctionType = FunctionType
     guessPurity (f :: FunctionType) 
       | f.returns.purity == IO = IO
       | any ((==) IO . FregeType.purity) f.params = IO
-      | f.returns.jtype == voidClass.getName = ST
       | not $ null f.exceptions = ST
       | f.returns.purity == ST = ST
       | any ((==) ST . FregeType.purity) f.params = ST
-      | any ((==) voidClass.getName . FregeType.jtype) f.params = ST
-      | otherwise = Pure 
+      | otherwise = Pure
     
     withPurity :: FunctionType -> FunctionType
     withPurity f = 
