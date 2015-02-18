@@ -35,13 +35,10 @@ data FunctionType = FunctionType
     guessPurity (f :: FunctionType) 
       | f.returns.purity == IO = IO
       | any ((==) IO . FregeType.purity) f.params = IO
-      | f.returns.jtype == voidClass.getName = ST
       | not $ null f.exceptions = ST
-      | f.jname == "new" = ST
       | f.returns.purity == ST = ST
       | any ((==) ST . FregeType.purity) f.params = ST
-      | any ((==) voidClass.getName . FregeType.jtype) f.params = ST
-      | otherwise = Pure 
+      | otherwise = Pure
     
     withPurity :: FunctionType -> FunctionType
     withPurity f = 
@@ -74,11 +71,15 @@ data FunctionType = FunctionType
              | otherwise = ""
              
     showName :: FunctionType -> String
-    showName f = purity ++ f.name ++ nativename
+    showName f = purity ++ escape f.name ++ nativename
       where
         purity = if f.returns.purity == Purity.Pure then "pure native " else "native "
-        nativename = if f.name == f.jname then "" else " " ++ f.jname
-                        
+        nativename = if f.name == f.jname then "" else " \"" ++ f.jname ++ "\""
+
+    escape :: String -> String
+    escape s | s `elem` keywords = "j" ++ s ++ "'"
+             | otherwise         = s
+
 instance Show FunctionType where
   show f = FunctionType.showName f ++ " :: " ++ FunctionType.showSignature f
 
@@ -112,7 +113,7 @@ genericArrayTypeToFregeType m arrayType = FregeType
       compType = arrayType.getGenericComponentType
       compFregeType = typeToFregeType m compType
       typeName 
-        | compType <:? TypeVariable.getClass = let typeVar = compType @: TypeVariable.getClass
+        | compType <:? TypeVariable.getClass = let typeVar = compType `asInstanceOf` TypeVariable.getClass
                                                in "JArray " ++ typeVar.getName.toLowerCase
         | otherwise = "JArray " ++ addParens compFregeType.name
 
@@ -145,11 +146,11 @@ classToFregeType m clazz = maybe unknown f $ M.lookup clazz.getName m
 
 typeToFregeType :: M.Map String FregeType -> Type -> FregeType
 typeToFregeType m jtype
-  | jtype <:? TypeVariable.getClass = typeVarToFregeType m $ jtype @: TypeVariable.getClass
-  | jtype <:? WildcardType.getClass = wildcardToFregeType m $ jtype @: WildcardType.getClass
-  | jtype <:? GenericArrayType.getClass = genericArrayTypeToFregeType m $ jtype @: GenericArrayType.getClass
-  | jtype <:? ParameterizedType.getClass = parameterizedTypeToFregeType m $ jtype @: ParameterizedType.getClass
-  | jtype <:? Class.getClass = classToFregeType m $ jtype @: Class.getClass
+  | jtype <:? TypeVariable.getClass = typeVarToFregeType m $ jtype `asInstanceOf` TypeVariable.getClass
+  | jtype <:? WildcardType.getClass = wildcardToFregeType m $ jtype `asInstanceOf` WildcardType.getClass
+  | jtype <:? GenericArrayType.getClass = genericArrayTypeToFregeType m $ jtype `asInstanceOf` GenericArrayType.getClass
+  | jtype <:? ParameterizedType.getClass = parameterizedTypeToFregeType m $ jtype `asInstanceOf` ParameterizedType.getClass
+  | jtype <:? Class.getClass = classToFregeType m $ jtype `asInstanceOf` Class.getClass
   | otherwise = FregeType "Object" objectClass.getName Pure
 
 constructorToFregeFunction :: M.Map String FregeType -> Constructor -> FunctionType
@@ -201,7 +202,7 @@ checked typ
     | typ <:? Class.getClass = isException && not isRuntimeException 
     | otherwise = false
   where
-    exception = typ @: Class.getClass
+    exception = typ `asInstanceOf` Class.getClass
     isException = exceptionClass.isAssignableFrom exception
     isRuntimeException  = runtimeExceptionClass.isAssignableFrom exception
         
@@ -223,6 +224,7 @@ fregeTypeNames :: M.Map String FregeType -> [TypeVariable] -> String
 fregeTypeNames m types = unwords $ map (FregeType.name . typeVarToFregeType m) types
                    
 constructorsToFregeTypes :: M.Map String FregeType -> Class a -> [FunctionType]
+constructorsToFregeTypes _ clazz | Modifier.isAbstract clazz.getModifiers = []
 constructorsToFregeTypes m clazz = 
   takeFirst . groupOverloaded . map toFunction . filter wanted $ clazz.getDeclaredConstructors.toList 
     where
@@ -330,3 +332,8 @@ indent n s = let spaces = packed (replicate n ' ') in spaces ++ s
 
 applyHead _ [] = []
 applyHead f (x: xs) = f x : xs
+
+keywords = ["abstract", "case", "class", "data", "derive", "do", "else", "false", "forall",
+            "if", "import", "in", "infix", "infixl", "infixr", "instance", "let", "mutable",
+            "native", "of", "package", "module", "private", "protected", "pure", "public",
+            "then", "throws", "true", "type", "where"]
