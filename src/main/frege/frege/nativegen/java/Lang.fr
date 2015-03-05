@@ -79,6 +79,9 @@ classFor s = do
 data ClassLoader = mutable native java.lang.ClassLoader where
     native loadClass :: ClassLoader -> String -> IO (ClassNotFoundException | Class a)
     native getSystemClassLoader "java.lang.ClassLoader.getSystemClassLoader()" :: IO ClassLoader
+    current = Thread.current () >>= threadContextClassLoader
+
+native threadContextClassLoader getContextClassLoader :: Thread -> IO ClassLoader
 
 (<:?) :: a -> Class b -> Bool
 a <:? clazz = clazz.isInstance a
