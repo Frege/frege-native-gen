@@ -45,6 +45,7 @@ main [className] = main [className, "types.properties"]
 
 main (className: typesFileName: _) = do
   knownTypes <- KnownTypesParser.parseKnownTypes typesFileName
-  clazzEither <- Class.forName className
+  classLoader <- ClassLoader.current
+  clazzEither <- Class.forName className false (Just classLoader)
   let clazz = either throw id clazzEither
   println $ genFrege knownTypes clazz
