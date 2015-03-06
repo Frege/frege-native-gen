@@ -359,15 +359,15 @@ void=pure,()
 
 ##How to run##
 
-1. Download and extract `native-gen-XX.zip` from [releases](https://github.com/Frege/native-gen/releases) where `XX` is the version. The `types.properties` is included in the zip.
+1. Download and extract `frege-native-gen-XX.zip` from [releases](https://github.com/Frege/frege-native-gen/releases) where `XX` is the version. The `types.properties` is included in the zip.
 2. Mention your class name along with it's purity in **types.properties**.
 
    For example, to generate for `java.util.HashSet`, add `java.util.HashSet=st`
    or if you want to call it a different name in Frege, add `java.util.HashSet=st,JHashSet`
-3. Run `java -jar native-gen-XX.jar java.util.HashSet`
+3. Run `java -jar frege-native-gen-XX.jar java.util.HashSet`
 
    To generate for a third party class (In this example, a class from Guava library):
 ```
-java -cp /path/to/guava-15.0.jar:lib/frege-YY.jar:native-gen-XX.jar frege.nativegen.Main com.google.common.collect.ImmutableCollection
+java -cp /path/to/guava-15.0.jar:lib/frege-YY.jar:frege-native-gen-XX.jar frege.nativegen.Main com.google.common.collect.ImmutableCollection
 ```
 where `XX` and `YY` are the versions of the jar files in the downloaded zip.
