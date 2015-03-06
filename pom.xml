@@ -3,12 +3,12 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.frege-lang</groupId>
-	<artifactId>native-gen</artifactId>
+	<artifactId>frege-native-gen</artifactId>
 	<version>1.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
-	<name>native-gen</name>
-	<url>https://github.com/Frege/native-gen</url>
+	<name>frege-native-gen</name>
+	<url>https://github.com/Frege/frege-native-gen</url>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -75,7 +75,7 @@
 				<version>2.2.1</version>
 				<configuration>
 					<appendAssemblyId>false</appendAssemblyId>
-					<finalName>native-gen-${project.version}</finalName>
+					<finalName>frege-native-gen-${project.version}</finalName>
 					<descriptors>
 						<descriptor>src/main/assembly/assembly.xml</descriptor>
 					</descriptors>
