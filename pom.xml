@@ -2,13 +2,13 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>frege</groupId>
-	<artifactId>native-gen</artifactId>
+	<groupId>org.frege-lang</groupId>
+	<artifactId>frege-native-gen</artifactId>
 	<version>1.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
-	<name>native-gen</name>
-	<url>https://github.com/Frege/native-gen</url>
+	<name>frege-native-gen</name>
+	<url>https://github.com/Frege/frege-native-gen</url>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -45,24 +45,16 @@
 			</plugin>
 
 			<plugin>
-				<groupId>com.theoryinpractise.frege</groupId>
-				<artifactId>frege-maven-plugin</artifactId>
-				<version>${frege.plugin.version}</version>
-				<executions>
-					<execution>
-						<id>compile</id>
-						<phase>generate-sources</phase>
-						<goals>
-							<goal>compile</goal>
-						</goals>
-					</execution>
-				</executions>
-				<configuration>
-					<inline>true</inline>
-					<hints>true</hints>
-					<includeStale>false</includeStale>
-				</configuration>
-			</plugin>
+                <groupId>io.repaint.maven</groupId>
+                <artifactId>tiles-maven-plugin</artifactId>
+                <version>${tiles-maven.plugin.version}</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <tiles>
+                        <tile>com.theoryinpractise.frege:frege-maven-tile:xml:1.0.2</tile>
+                    </tiles>
+                </configuration>
+            </plugin>
 
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -84,7 +76,7 @@
 				<version>2.2.1</version>
 				<configuration>
 					<appendAssemblyId>false</appendAssemblyId>
-					<finalName>native-gen-${project.version}</finalName>
+					<finalName>frege-native-gen-${project.version}</finalName>
 					<descriptors>
 						<descriptor>src/main/assembly/assembly.xml</descriptor>
 					</descriptors>
