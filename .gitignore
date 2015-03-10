@@ -12,4 +12,8 @@ dist/
 
 *.project
 *.iml
-*.sh
+
+.gradle
+build
+
+
