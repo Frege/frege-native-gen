@@ -17,7 +17,7 @@ Here are some examples on how this works:
 3. If the class implements `Serializable`, `derive Serializable` will be generated. In the same way, if the class
    is not `Serializable` but implements `Cloneable`, `derive Cloneable` will be generated and for subclasses of `Throwable`, `derive Exceptional` will be generated.
 
-```
+```frege
 data Point = native java.awt.Point where
 
   native x ".x" :: Mutable s Point -> ST s Int
@@ -54,7 +54,7 @@ Type parameters for generic classes and methods are resolved, so are nested clas
 naming convention for nested classes in the generated code is to prepend the class name with the parent class name and an underscore
 but it can be overridden to have a different name (See `types.properties` below).
 
-```
+```frege
 data HashMap k v = native java.util.HashMap where
 
   native new :: Mutable s (Map k v) -> STMutable s (HashMap k v)
@@ -102,7 +102,7 @@ the method will be considered as impure (here for example, `getAvailableLocales`
     is supposed to be pure because both `LocaleCategory` and `Locale` are pure but since the other overloaded version,
     `() -> ST s Locale` is impure, the first version is also modified to be impure (in `ST`).
 
-```
+```frege
 data Locale = pure native java.util.Locale where
 
   pure native english java.util.Locale.ENGLISH :: Locale
@@ -202,7 +202,7 @@ derive Serializable Locale
 
 Checked exceptions are identified and a `throws` is appended to the function type with all the checked exceptions.
 
-```
+```frege
 data FileInputStream = native java.io.FileInputStream where
 
   native new :: MutableIO File -> IOMutable FileInputStream throws FileNotFoundException
