@@ -371,3 +371,9 @@ void=pure,()
 java -cp /path/to/guava-15.0.jar:lib/frege-YY.jar:frege-native-gen-XX.jar frege.nativegen.Main com.google.common.collect.ImmutableCollection
 ```
 where `XX` and `YY` are the versions of the jar files in the downloaded zip.
+
+## Continuous Integration ##
+
+The Travis CI build of this repository is at https://travis-ci.org/Frege/frege-native-gen.
+
+The snapshot builds are automatically deploy to Sonatype at https://oss.sonatype.org/content/groups/public/org/frege-lang/frege-native-gen/.
