@@ -12,9 +12,8 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<frege.plugin.version>1.0.5</frege.plugin.version>
-		<frege.version>3.22.324-g630677b</frege.version>
-		<!--<frege.version>3.22.367-g2737683</frege.version>-->
+        <tiles-maven.plugin.version>2.1</tiles-maven.plugin.version>
+		<frege.version>3.22.367-g2737683</frege.version>
 	</properties>
 
 	<dependencies>
