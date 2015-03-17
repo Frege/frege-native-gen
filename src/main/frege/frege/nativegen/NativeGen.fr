@@ -50,17 +50,18 @@ data FunctionType = FunctionType
         
         paramsWithPurity = map addPurity f.params 
           where
-            monad = if purityGuess == ST then "Mutable s" else "MutableIO"
-            addPurity p 
+            paramType p = (if purityGuess == IO then "MutableIO " else "Mutable s ") ++ addParens p.name
+            addPurity p
               | p.purity == Pure = p
-              | otherwise =  FregeType (monad ++ " " ++ addParens p.name) p.jtype purityGuess
+              | p.purity == ST = FregeType (paramType p) p.jtype purityGuess
+              | otherwise =  FregeType p.name p.jtype purityGuess
               
     returnWithPurity :: Purity -> FunctionType -> FregeType
     returnWithPurity purity f = FregeType (monad ++ " " ++ addParens f.returns.name) f.returns.jtype purity 
           where
             monad 
               | f.returns.purity == Pure = if purity == ST then "ST s" else "IO"
-              | otherwise = if purity == ST then "STMutable s" else "IOMutable" 
+              | otherwise = if purity == ST then "STMutable s" else "IO"
               
     showSignature :: FunctionType -> String
     showSignature f = ptypes ++ retType ++ exceps
@@ -277,7 +278,10 @@ genFrege m clazz =
       
       thisType = fregeTypeWithTypeParams m clazz
       
-      purity = if thisType.purity == Pure then "pure " else ""
+      purity = case thisType.purity of
+                  Pure -> "pure "
+                  IO -> "mutable "
+                  _ -> ""
       
       whr = if hasMembers then " where\n\n" else ""
       hasMembers = not $ null constructors && null methods && null fields
