@@ -1,4 +1,6 @@
 #Frege code generator for Java classes#
+[![Build Status](https://travis-ci.org/Frege/frege-native-gen.svg)](https://travis-ci.org/Frege/frege-native-gen)
+
 This project aims to reduce the manual effort for defining native bindings for Java classes in Frege. 
 
 Given a Java class and it's purity (whether it is pure or mutable(`ST`) or doing IO(`IO`)), 
@@ -13,7 +15,7 @@ Here are some examples on how this works:
 **Example 1:** `java.awt.Point` in `ST`
 
 1. All public members are resolved including public fields.
-2. Overloaded constructors and methods are grouped and their types are seperated with `|`.
+2. Overloaded constructors and methods are grouped and their types are separated with `|`.
 3. If the class implements `Serializable`, `derive Serializable` will be generated. In the same way, if the class
    is not `Serializable` but implements `Cloneable`, `derive Cloneable` will be generated and for subclasses of `Throwable`, `derive Exceptional` will be generated.
 
