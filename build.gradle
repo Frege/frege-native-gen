@@ -22,8 +22,8 @@ sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
 ext {
-    baseVersion = "1.0"
-    isSnapshot = false
+    baseVersion = "1.1"
+    isSnapshot = true
     snapshotAppendix = "-SNAPSHOT"
     projectVersion = baseVersion + (isSnapshot ? snapshotAppendix : "")
 
