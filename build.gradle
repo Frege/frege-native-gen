@@ -2,12 +2,14 @@
 buildscript {
     repositories {
         mavenLocal()
+        mavenCentral()
         maven {
             url = "https://oss.sonatype.org/content/groups/public"
         }
     }
     dependencies {
-        classpath "org.frege-lang:frege-gradle-plugin:0.2"
+        classpath "org.frege-lang:frege-gradle-plugin:0.4"
+        classpath "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.5.3"
     }
 }
 
@@ -15,6 +17,7 @@ apply plugin: "java"
 apply plugin: "maven"
 apply plugin: "signing"
 apply plugin: "frege"
+apply plugin: 'io.codearte.nexus-staging'
 
 defaultTasks "build"
 
@@ -23,7 +26,7 @@ targetCompatibility = 1.7
 
 ext {
     baseVersion = "1.1"
-    isSnapshot = true
+    isSnapshot = false
     snapshotAppendix = "-SNAPSHOT"
     projectVersion = baseVersion + (isSnapshot ? snapshotAppendix : "")
 
@@ -46,6 +49,12 @@ repositories {
 }
 
 dependencies {
-    compile "com.theoryinpractise.frege:frege:$fregeVersion"
+    compile "org.frege-lang:frege:$fregeVersion"
 }
+
+nexusStaging {
+    packageGroup = groupName
+    stagingProfileId = "a622b6773bea07"
+}
+
 
