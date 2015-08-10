@@ -10,6 +10,7 @@ data Class a = pure native java.lang.Class where
     pure native isInstance :: Class a -> b -> Bool
     pure native cast :: Class a -> b -> a
     pure native isArray :: Class a -> Bool
+    pure native isEnum :: Class a -> Bool
     pure native getComponentType :: Class a -> Class b
     pure native getModifiers :: Class a -> Int
     pure native isMemberClass :: Class a -> Bool
@@ -19,7 +20,7 @@ data Class a = pure native java.lang.Class where
     pure native getCanonicalName :: Class a -> String
     pure native isAssignableFrom :: Class a -> Class b -> Bool
     pure native isPrimitive :: Class a -> Bool
-    native getDeclaredMethod :: Class a -> String -> JArray (Class b) -> ST s Method throws NoSuchMethodException
+    native getDeclaredMethod :: Class a -> String -> ArrayOf s (Class b) -> ST s Method throws NoSuchMethodException
     pure native getDeclaredConstructors :: Class a -> JArray Constructor
     pure native getDeclaredMethods :: Class a -> JArray Method
     pure native getDeclaredFields :: Class a -> JArray Field
