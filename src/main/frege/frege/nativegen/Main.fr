@@ -98,6 +98,30 @@ native module where {
   public static java.util.List<Class<?>> packageClasses(String packageName) {
     java.util.List<Class<?>> classes;
     try {
+/*
+        classes = fj.control.parallel.parMap(
+            com.google.common.reflect.ClassPath.from(Thread.currentThread().getContextClassLoader()).getTopLevelClassesRecursive(packageName),
+            new fj.F<com.google.common.reflect.ClassPath.ClassInfo, Class<?>>(){
+                public Class<?> f(com.google.common.reflect.ClassPath.ClassInfo a) {
+                    return a.load();
+                }
+            }
+        )
+
+        classes = fj.data.List.list(
+            com.google.common.reflect.ClassPath.from(Thread.currentThread().getContextClassLoader())
+            .getTopLevelClassesRecursive(packageName)
+        ).map(new fj.F<com.google.common.reflect.ClassPath.ClassInfo, Class<?>>(){
+            public Class<?> f(com.google.common.reflect.ClassPath.ClassInfo a) {
+                return a.load();
+            }
+        }).filter(new fj.F<Class<?>, Boolean>(){
+            public Boolean f(Class<?> cls) {
+                return !cls.isSynthetic() && !cls.isAnonymousClass() && !cls.isLocalClass();
+            }
+        }).toJavaList();
+*/
+
         classes = com.google.common.reflect.ClassPath.from(Thread.currentThread().getContextClassLoader())
                     .getTopLevelClassesRecursive(packageName)
                     .parallelStream()
