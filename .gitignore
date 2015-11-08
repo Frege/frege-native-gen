@@ -1,6 +1,11 @@
 bin/
 target/
+
 dist/
+
+#Gradle application plugin static files
+!src/dist
+
 .idea/
 .settings/
 

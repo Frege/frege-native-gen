@@ -30,7 +30,6 @@ compileFrege {
 }
 
 mainClassName = "frege.nativegen.Main"
-applicationName = "fregeffi"
 
 run{
     standardInput = System.in
@@ -50,9 +49,7 @@ ext {
     snapshotAppendix = "-SNAPSHOT"
     projectVersion = baseVersion + (isSnapshot ? snapshotAppendix : "")
 
-    fregeBaseVersion = "3.22.524"
-    fregeClassifier = "-gcc99d7e"
-    fregeVersion = "$fregeBaseVersion$fregeClassifier"
+    fregeVersion = "3.23.370-g898bc8c"
 
     guavaVersion = "18.0"
 }

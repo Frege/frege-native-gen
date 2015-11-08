@@ -361,18 +361,21 @@ void=pure,()
 
 ##How to run##
 
-1. Download and extract `frege-native-gen-XX.zip` from [releases](https://github.com/Frege/frege-native-gen/releases) where `XX` is the version. The `types.properties` is included in the zip.
-2. Mention your class name along with it's purity in **types.properties**.
+1. Download and extract `frege-native-gen-<version>.zip` from [releases](https://github.com/Frege/frege-native-gen/releases). 
+   The `types.properties` is included in the zip.
+1. Mention your class name along with it's purity in **types.properties**.
 
-   For example, to generate for `java.util.HashSet`, add `java.util.HashSet=st`
+   For example, `java.util.HashSet=st`
    or if you want to call it a different name in Frege, add `java.util.HashSet=st,JHashSet`
-3. Run `java -jar frege-native-gen-XX.jar java.util.HashSet`
+   
+1. Run `java -cp "lib/*:$JAVA_HOME/jre/lib/*" frege.nativegen.Main java.util`
+   This would convert all the classes in `java.util` package including sub packages and create corresponding Frege modules (one Frege module per package).
+   The generated sources will be in `generated-sources` folder.
 
-   To generate for a third party class (In this example, a class from Guava library):
+   To generate for classes other than those in JDK, add the respective library in the classpath:
 ```
-java -cp /path/to/guava-15.0.jar:lib/frege-YY.jar:frege-native-gen-XX.jar frege.nativegen.Main com.google.common.collect.ImmutableCollection
+java -cp "/path/to/guava.jar:lib/*" frege.nativegen.Main com.google.common.collect
 ```
-where `XX` and `YY` are the versions of the jar files in the downloaded zip.
 
 ## Continuous Integration ##
 

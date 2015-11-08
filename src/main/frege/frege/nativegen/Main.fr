@@ -1,10 +1,11 @@
 module frege.nativegen.Main where
 
 import frege.Prelude hiding (Class, ClassLoader)
-import frege.nativegen.NativeGen
+import frege.nativegen.NativeGen hiding (packageName)
 import frege.nativegen.java.Lang
+import frege.nativegen.java.Reflect
 import Data.TreeMap as M()
-import Data.List (intercalate)
+import Data.List (intercalate, unique)
 import Java.Util (List, Iterator)
 
 abstract data KnownTypesParser = KnownTypesParser
@@ -17,10 +18,10 @@ abstract data KnownTypesParser = KnownTypesParser
 
     parseKey key = classFor $ packed key
 
-    parseValue cls "" = FregeType (classToFregeName cls) cls.getName Pure
+    parseValue cls "" = FregeType (classToFregeName cls) (Class.asRaw cls) Pure
     parseValue cls value = case break (== ',') value.toList of
-      (purity, []) -> FregeType (classToFregeName cls) cls.getName (parsePurity $ packed purity)
-      (purity, _:fname) -> FregeType (packed fname) cls.getName (parsePurity $ packed purity)
+      (purity, []) -> FregeType (classToFregeName cls) (Class.asRaw cls) (parsePurity $ packed purity)
+      (purity, _:fname) -> FregeType (packed fname) (Class.asRaw cls) (parsePurity $ packed purity)
 
     classToFregeName cls
       | cls.isArray = "JArray " ++ cls.getComponentType.getCanonicalName
@@ -42,37 +43,73 @@ prompt promptStr = do
   stdout.flush
   getLine
 
-main = do
-  knownTypes <- KnownTypesParser.parseKnownTypes "types.properties"
-  classLoader <- ClassLoader.current
-  packageName <- prompt "Package name: "
-  outputDir <- prompt "Output directory: "
-  classes <- classesForPackage packageName >>= List.iterator >>= Iterator.toList
-  forM_ classes $ convert knownTypes outputDir
-
-convert :: M.Tree String FregeType -> String -> Class a -> IO ()
-convert knownTypes outputDir clazz = do
-  let nmParts = nameParts clazz
-  fileName <- calculateFileName clazz outputDir nmParts
-  f <- File.new fileName
-  exists <- f.exists
+writeModule :: M.TreeMap String FregeType -> String -> String -> String -> [RawClass] -> IO ()
+writeModule m outputDir moduleName code deps = do
+  let fileName = calculateFileName outputDir moduleName
+  exists <- File.new fileName >>= File.exists
   pw <- createPrintWriter fileName
-  let moduleName = intercalate "." nmParts
-      moduleDecl = "module " ++ moduleName ++ " where\n"
+  let moduleDecl = "module " ++ moduleName ++ " where\n"
   when (not exists) (pw.println moduleDecl)
-  pw.println $ genFrege knownTypes clazz
+  writeImports m deps pw
+  pw.println
+  pw.println code
   pw.flush
   pw.close
+
+convert :: M.TreeMap String FregeType -> String -> String -> IO ()
+convert knownTypes packageName outputDir = do
+  classes <- classesForPackage packageName >>= List.iterator >>= Iterator.toList
+  let clsDeps clazz = do
+                        let deps = genFrege knownTypes clazz
+                            nmParts = nameParts clazz
+                            moduleName = intercalate "." nmParts
+                        return (moduleName, deps)
+  deps <- mapM clsDeps classes
+  let mergedDeps = M.each $ M.fromListWith (\(!c1, !d1) \(!c2, !d2) -> (c1 ++ "\n" ++ c2, d1 ++ d2)) deps
+  forM_ mergedDeps (\(moduleName, (code, deps)) -> writeModule knownTypes outputDir moduleName code deps)
+
+writeImports :: M.TreeMap String FregeType -> [RawClass] -> PrintWriter -> IO ()
+writeImports m deps pw = mapM_ write (unique modules) where
+  write modul = pw.println $ "import " ++ modul
+  modules = deps >>= (typeToModule m [] . Class.asType . RawClass.asClass)
+
+typeToModule :: M.TreeMap String FregeType -> [String] -> Type -> [String]
+typeToModule m acc jtype
+  | jtype <:? TypeVariable.getClass = acc
+  | jtype <:? WildcardType.getClass = wildcardToModule m acc $ jtype `asInstanceOf` WildcardType.getClass
+  | jtype <:? GenericArrayType.getClass = acc
+  | jtype <:? ParameterizedType.getClass = parameterizedTypeToModule m acc $ jtype `asInstanceOf` ParameterizedType.getClass
+  | jtype <:? Class.getClass = classToModule m acc $ jtype `asInstanceOf` Class.getClass
+  | otherwise = acc
+
+wildcardToModule :: M.TreeMap String FregeType -> [String] -> WildcardType -> [String]
+wildcardToModule m acc wildcard
+  | wildcard.getLowerBounds.length != 0 = typeToModule m acc wildcard.getLowerBounds.[0]
+  | otherwise = typeToModule m acc wildcard.getUpperBounds.[0]
+
+parameterizedTypeToModule :: M.TreeMap String FregeType -> [String] -> ParameterizedType -> [String]
+parameterizedTypeToModule m acc ptype =
+  typeToModule m acc ptype.getRawType ++ (ptype.getActualTypeArguments.toList >>= (\t -> typeToModule m [] t))
+
+classToModule :: M.TreeMap String FregeType -> [String] -> Class a -> [String]
+classToModule m acc clazz = (maybe unknown f $ m.lookup clazz.getName): acc
+  where
+    unknown = packageName clazz
+
+    f :: FregeType -> String
+    f fregeType = packageName fregeType.jtype.asClass
+
+packageName :: Class a -> String
+packageName cls | cls.isArray = packageName cls.getComponentType
+packageName cls = intercalate "." $ nameParts cls
 
 createPrintWriter fileName = do
   f <- File.new fileName
   f.getParentFile >>= (maybe (return false) (File.mkdirs))
   FileWriter.new fileName true >>= BufferedWriter.new >>= PrintWriter.new
 
-calculateFileName :: Class a -> String -> [String] -> IO String
-calculateFileName clazz outputDir nameParts = do
-  let relativeFileName = intercalate "/" nameParts
-  return $ outputDir ++ "/" ++ relativeFileName ++ ".fr"
+calculateFileName :: String -> String -> String
+calculateFileName outputDir moduleName = outputDir ++ "/" ++ (replace moduleName "." "/") ++ ".fr"
 
 nameParts :: Class a -> [String]
 nameParts clazz = init packageNameParts ++ [fileName] where
@@ -110,3 +147,14 @@ native module where {
     return classes;
   }
 }
+
+main (packageName: outputDir: _) = do
+  knownTypes <- KnownTypesParser.parseKnownTypes "types.properties"
+  classLoader <- ClassLoader.current
+  convert knownTypes packageName outputDir
+
+main (packageName: _) = main [packageName, "generated-sources"]
+
+main [] = do
+  packageName <- prompt "Package name: "
+  main [packageName]

@@ -24,8 +24,14 @@ data Class a = pure native java.lang.Class where
     pure native getDeclaredConstructors :: Class a -> JArray Constructor
     pure native getDeclaredMethods :: Class a -> JArray Method
     pure native getDeclaredFields :: Class a -> JArray Field
-    
+
+    pure native asRaw "(Class)" :: Class a -> RawClass
+
+data RawClass = pure native java.lang.Class where
+  pure native asClass "(Class)" :: RawClass -> Class a
+
 pure native asObject "(Object)" :: a -> Object
+
 
 data NoSuchMethodException = pure native java.lang.NoSuchMethodException
 derive Exceptional NoSuchMethodException
