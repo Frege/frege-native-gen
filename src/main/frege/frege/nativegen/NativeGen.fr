@@ -244,29 +244,45 @@ fieldsToFregeTypes m clazz = map toFunction . filter wanted $ clazz.getDeclaredF
 
 methodsToFregeTypes :: M.TreeMap String FregeType -> Class a -> [[FunctionType]]
 methodsToFregeTypes m clazz = 
-  groupOverloaded . map toFunction . filter wanted $ clazz.getDeclaredMethods.toList 
+  groupOverloaded . disambiguate . map toFunction . filter wanted $ clazz.getDeclaredMethods.toList
     where
       wanted method = not method.isSynthetic && not method.isBridge && Modifier.isPublic method.getModifiers
       toFunction = FunctionType.withPurity . methodToFregeFunction m
-    
+
+      -- Disambiguate static and instance methods with same name; if any, appends apostrophe to the static method.
+      disambiguate fs = concat
+                        . reverse
+                        . fold f []
+                        . groupBy ((==) `on` FunctionType.name)
+                        . sortBy (comparing FunctionType.name)
+                        $ fs
+
+      f acc fs | anyDifferent fs = (map appendAposForStatic fs): acc
+               | otherwise = fs:acc
+
+      appendAposForStatic f | f.jname ~ '\.' = f.{name<-(\n -> n ++ "'")}
+                            | otherwise = f
+      anyDifferent [] = false
+      anyDifferent (x:xs) = any (\f -> f.jname != x.jname) xs
+
 groupOverloaded :: [FunctionType] -> [[FunctionType]]
-groupOverloaded functions = 
-  updatePurity [] . groupBy sameName . sortBy (comparing FunctionType.name) $ functions
+groupOverloaded functions =
+  map updatePurity . groupBy sameName . sortBy (comparing FunctionType.name) $ functions
     where
       sameName f1 f2 = f1.name == f2.name && f1.jname == f2.jname
-    
-      updatePurity :: [[FunctionType]] -> [[FunctionType]] -> [[FunctionType]]
-      updatePurity acc [] = reverse acc
-      updatePurity acc (fs: fss) = case fs of
-        [] -> updatePurity acc fss
-        (f:_) -> updatePurity (fs':acc) fss
-          where
-            allPure = all (\f -> f.returns.purity == Pure) fs
-            fs' = map changePurity fs
-            changePurity g = 
-              if not allPure && g.returns.purity == Pure
-                then g.{returns = FunctionType.returnWithPurity ST g}
-                else g    
+
+updatePurity :: [FunctionType] -> [FunctionType]
+updatePurity fs
+    | allPure fs = fs
+    | otherwise  = map changePurity fs
+  where
+    allPure = all (\f -> f.returns.purity == Pure)
+    changePurity g =
+      if g.returns.purity == Pure
+        then g.{returns = FunctionType.returnWithPurity ST g}
+        else g
+
+
                 
 genFrege :: M.TreeMap String FregeType -> Class a -> (String, [RawClass])
 genFrege m clazz = (code, dependencies)

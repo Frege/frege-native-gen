@@ -50,7 +50,7 @@ writeModule m outputDir moduleName code deps = do
   pw <- createPrintWriter fileName
   let moduleDecl = "module " ++ moduleName ++ " where\n"
   when (not exists) (pw.println moduleDecl)
-  writeImports m deps pw
+  writeImports m moduleName deps pw
   pw.println
   pw.println code
   pw.flush
@@ -68,8 +68,9 @@ convert knownTypes packageName outputDir = do
   let mergedDeps = M.each $ M.fromListWith (\(!c1, !d1) \(!c2, !d2) -> (c1 ++ "\n" ++ c2, d1 ++ d2)) deps
   forM_ mergedDeps (\(moduleName, (code, deps)) -> writeModule knownTypes outputDir moduleName code deps)
 
-writeImports :: M.TreeMap String FregeType -> [RawClass] -> PrintWriter -> IO ()
-writeImports m deps pw = mapM_ write (unique modules) where
+writeImports :: M.TreeMap String FregeType -> String -> [RawClass] -> PrintWriter -> IO ()
+writeImports m moduleName deps pw = mapM_ write (unique modules) where
+  write m | m == "java.Lang" || m == moduleName = return ()
   write modul = pw.println $ "import " ++ modul
   modules = deps >>= (typeToModule m [] . Class.asType . RawClass.asClass)
 
