@@ -9,6 +9,8 @@ The generated code may still not compile due to other unknown types or you might
 if the method is known to return a possible `null`. So this is just an utility so that
 we don't have to look at every Java method signatures and write down the corresponding Frege type signatures 
 which is both time consuming and more error-prone. 
+The tool supports generating Frege code for all the classes in an entire Java package and its sub packages recursively.
+It also figures out the dependencies from method signatures and generates import statements in the Frege modules.
 
 Here are some examples on how this works:
 
@@ -231,7 +233,7 @@ data FileInputStream = native java.io.FileInputStream where
 * All the examples above use a properties file which indicates all the Java classes, their purity and their optional new names in Frege code.
 The name used here as the key is the class name returned by `java.lang.Class.getName()`
 for that class. Nested classes can also be mentioned with their name as returned by `java.lang.Class.getName()`.
-* If a class is missing in this file but being used in the class we are generating, the missing class is assumed to be pure and
+* If a class is missing in this file but being used in the class we are generating, the missing class is assumed to be `ST` and
 the unqualified name of the class will be used in the generated code.
 
 ```
