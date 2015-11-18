@@ -98,7 +98,8 @@ native module where {
   public static java.util.List<Class<?>> packageClasses(String packageName) {
     java.util.List<Class<?>> classes;
     try {
-/*
+
+        /*
         classes = fj.control.parallel.parMap(
             com.google.common.reflect.ClassPath.from(Thread.currentThread().getContextClassLoader()).getTopLevelClassesRecursive(packageName),
             new fj.F<com.google.common.reflect.ClassPath.ClassInfo, Class<?>>(){
@@ -107,6 +108,7 @@ native module where {
                 }
             }
         )
+        */
 
         classes = fj.data.List.list(
             com.google.common.reflect.ClassPath.from(Thread.currentThread().getContextClassLoader())
@@ -120,14 +122,15 @@ native module where {
                 return !cls.isSynthetic() && !cls.isAnonymousClass() && !cls.isLocalClass();
             }
         }).toJavaList();
-*/
 
+/*
         classes = com.google.common.reflect.ClassPath.from(Thread.currentThread().getContextClassLoader())
                     .getTopLevelClassesRecursive(packageName)
                     .parallelStream()
                     .map(com.google.common.reflect.ClassPath.ClassInfo::load)
                     .filter(cls -> !cls.isSynthetic() && !cls.isAnonymousClass() && !cls.isLocalClass())
                     .collect(java.util.stream.Collectors.toList());
+*/
     } catch (Exception e) {
         throw new RuntimeException(e);
     }
