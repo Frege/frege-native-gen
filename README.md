@@ -366,21 +366,32 @@ void=pure,()
 1. Download and extract `frege-native-gen-<version>.zip` from [releases](https://github.com/Frege/frege-native-gen/releases). 
    The `types.properties` is included in the zip.
 1. Mention your class name along with it's purity in **types.properties**.
-
-   For example, `java.util.HashSet=st`
-   or if you want to call it a different name in Frege, add `java.util.HashSet=st,JHashSet`
+      
+      For example, `java.util.HashSet=st`
+      or if you want to call it a different name in Frege, add `java.util.HashSet=st,JHashSet`
    
-1. Run `java -cp "lib/*:$JAVA_HOME/jre/lib/*" frege.nativegen.Main java.util`
-   This would convert all the classes in `java.util` package including sub packages and create corresponding Frege modules (one Frege module per package).
-   The generated sources will be in `generated-sources` folder.
+1. Run `java -cp "lib/*:$JAVA_HOME/jre/lib/*" frege.nativegen.Main -p java.util`
+      
+      This would convert all the classes in `java.util` package including sub packages and create corresponding Frege modules (one Frege module per package).
+      The generated sources will be in `generated-sources` folder.
+   
+      * Run `java -cp "lib/*:$JAVA_HOME/jre/lib/*" frege.nativegen.Main -c java.util.List` for a specific class.
+      * To generate for classes other than those in JDK, add the respective library in the classpath:
+      `java -cp "/path/to/guava.jar:lib/*" frege.nativegen.Main -p com.google.common.collect`
+      * Run `java -cp "lib/*:$JAVA_HOME/jre/lib/*" frege.nativegen.Main -h` for help.
+      
+###How to run with Gradle###
 
-   To generate for classes other than those in JDK, add the respective library in the classpath:
-```
-java -cp "/path/to/guava.jar:lib/*" frege.nativegen.Main com.google.common.collect
-```
+From project source root,
+
+* For all the classes in a package: `./gradlew run -Poptions="-p java.util"`
+* For a specific class: `./gradlew run -Poptions="-c java.util.List"`
+* To run with different *types.properties*: `./gradlew run -Poptions="-c java.util.List -t /path/to/types.properties"`
+* For help: `./gradlew run -Poptions="-h"`
+
 
 ## Continuous Integration ##
 
-The Travis CI build of this repository is at https://travis-ci.org/Frege/frege-native-gen.
+The Travis CI build of this repository is at [https://travis-ci.org/Frege/frege-native-gen](https://travis-ci.org/Frege/frege-native-gen).
 
-The snapshot builds are automatically deploy to Sonatype at https://oss.sonatype.org/content/groups/public/org/frege-lang/frege-native-gen/.
+The snapshot builds are automatically deploy to Sonatype at [https://oss.sonatype.org/content/groups/public/org/frege-lang/frege-native-gen/](https://oss.sonatype.org/content/groups/public/org/frege-lang/frege-native-gen/).

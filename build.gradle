@@ -11,7 +11,6 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-//        classpath "org.frege-lang:frege-gradle-plugin:0.4.1"
         classpath "gradle.plugin.org.frege-lang:frege-gradle-plugin:0.5"
         classpath "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.5.3"
     }
@@ -20,19 +19,9 @@ buildscript {
 apply plugin: "java"
 apply plugin: "maven"
 apply plugin: "signing"
-//apply plugin: "frege"
 apply plugin: "org.frege-lang"
 apply plugin: 'io.codearte.nexus-staging'
 apply plugin: "application"
-
-//tasks.compileFrege.dependsOn "compileJava"
-//
-//compileFrege {
-//    verbose = true
-//    hints = true
-//    make = true
-//    inline = false
-//}
 
 mainClassName = "frege.nativegen.Main"
 
@@ -40,11 +29,9 @@ run {
     standardInput = System.in
     standardOutput = System.out
 
-    args = ["fj"]
-//    args = ["java.util.HashSet"]
-//    args = ["java.util"]
-    if (hasProperty("args")) {
-//        args project.args.split()
+    if (project.hasProperty("options")) {
+        String noptions = "-t $rootDir/src/dist/types.properties " + options
+        args noptions.split(' ')
     }
 }
 
@@ -83,7 +70,6 @@ compileTestFrege {
 dependencies {
     compile "org.frege-lang:frege:$fregeVersion"
     compile "com.google.guava:guava:$guavaVersion"
-    compile "org.functionaljava:functionaljava:4.4"
 }
 
 nexusStaging {
