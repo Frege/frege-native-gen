@@ -56,17 +56,25 @@ writeModule m outputDir moduleName code deps = do
   pw.flush
   pw.close
 
-convert :: M.TreeMap String FregeType -> String -> String -> IO ()
-convert knownTypes packageName outputDir = do
+convertPackage :: M.TreeMap String FregeType -> String -> String -> IO ()
+convertPackage knownTypes packageName outputDir = do
   classes <- classesForPackage packageName >>= List.iterator >>= Iterator.toList
-  let clsDeps clazz = do
-                        let deps = genFrege knownTypes clazz
-                            nmParts = nameParts clazz
-                            moduleName = intercalate "." nmParts
-                        return (moduleName, deps)
-  deps <- mapM clsDeps classes
-  let mergedDeps = M.each $ M.fromListWith (\(!c1, !d1) \(!c2, !d2) -> (c1 ++ "\n" ++ c2, d1 ++ d2)) deps
-  forM_ mergedDeps (\(moduleName, (code, deps)) -> writeModule knownTypes outputDir moduleName code deps)
+  let moduleDeps = map (classDeps knownTypes) classes
+      mergedDeps = M.each $ M.fromListWith (\(!c1, !d1) \(!c2, !d2) -> (c1 ++ "\n" ++ c2, d1 ++ d2)) moduleDeps
+  for mergedDeps (\(moduleName, (code, deps)) -> writeModule knownTypes outputDir moduleName code deps)
+
+classDeps knownTypes clazz =
+  let deps = genFrege knownTypes clazz
+      nmParts = nameParts clazz
+      moduleName = intercalate "." nmParts
+  in (moduleName, deps)
+
+convertClass :: M.TreeMap String FregeType -> String -> String -> IO ()
+convertClass knownTypes className outputDir = do
+  clazzEither <- Class.forName className
+  let clazz = either throw id clazzEither
+      (moduleName, (code, deps)) = classDeps knownTypes clazz
+  writeModule knownTypes outputDir moduleName code deps
 
 writeImports :: M.TreeMap String FregeType -> String -> [RawClass] -> PrintWriter -> IO ()
 writeImports m moduleName deps pw = mapM_ write (unique modules) where
@@ -90,7 +98,7 @@ wildcardToModule m acc wildcard
 
 parameterizedTypeToModule :: M.TreeMap String FregeType -> [String] -> ParameterizedType -> [String]
 parameterizedTypeToModule m acc ptype =
-  typeToModule m acc ptype.getRawType ++ (ptype.getActualTypeArguments.toList >>= (\t -> typeToModule m [] t))
+  typeToModule m acc ptype.getRawType ++ (ptype.getActualTypeArguments.toList >>= (typeToModule m []))
 
 classToModule :: M.TreeMap String FregeType -> [String] -> Class a -> [String]
 classToModule m acc clazz = (maybe unknown f $ m.lookup clazz.getName): acc
@@ -127,48 +135,22 @@ capitalize :: String -> String
 capitalize s | (h:t) <- s.toList  = packed $ h.toUpperCase : t
 capitalize s = s
 
-pure native toString :: a -> String
 pure native split :: String -> String -> JArray String
 
 native classesForPackage frege.nativegen.Main.packageClasses :: String -> STMutable s (List (Class a))
 
 native module where {
   public static java.util.List<Class<?>> packageClasses(String packageName) {
-    java.util.List<Class<?>> classes;
+    java.util.List<Class<?>> classes = new java.util.ArrayList<>();
     try {
-
-        /*
-        classes = fj.control.parallel.parMap(
-            com.google.common.reflect.ClassPath.from(Thread.currentThread().getContextClassLoader()).getTopLevelClassesRecursive(packageName),
-            new fj.F<com.google.common.reflect.ClassPath.ClassInfo, Class<?>>(){
-                public Class<?> f(com.google.common.reflect.ClassPath.ClassInfo a) {
-                    return a.load();
-                }
-            }
-        )
-        */
-
-        classes = fj.data.List.list(
-            com.google.common.reflect.ClassPath.from(Thread.currentThread().getContextClassLoader())
-            .getTopLevelClassesRecursive(packageName)
-        ).map(new fj.F<com.google.common.reflect.ClassPath.ClassInfo, Class<?>>(){
-            public Class<?> f(com.google.common.reflect.ClassPath.ClassInfo a) {
-                return a.load();
-            }
-        }).filter(new fj.F<Class<?>, Boolean>(){
-            public Boolean f(Class<?> cls) {
-                return !cls.isSynthetic() && !cls.isAnonymousClass() && !cls.isLocalClass();
-            }
-        }).toJavaList();
-
-/*
-        classes = com.google.common.reflect.ClassPath.from(Thread.currentThread().getContextClassLoader())
-                    .getTopLevelClassesRecursive(packageName)
-                    .parallelStream()
-                    .map(com.google.common.reflect.ClassPath.ClassInfo::load)
-                    .filter(cls -> !cls.isSynthetic() && !cls.isAnonymousClass() && !cls.isLocalClass())
-                    .collect(java.util.stream.Collectors.toList());
-*/
+         com.google.common.collect.ImmutableSet<com.google.common.reflect.ClassPath.ClassInfo> clsInfos =
+           com.google.common.reflect.ClassPath.from(Thread.currentThread().getContextClassLoader())
+             .getTopLevelClassesRecursive(packageName);
+        for (com.google.common.reflect.ClassPath.ClassInfo clsInfo: clsInfos) {
+          Class<?> cls = clsInfo.load();
+          if (!cls.isSynthetic() && !cls.isAnonymousClass() && !cls.isLocalClass())
+            classes.add(cls);
+        }
     } catch (Exception e) {
         throw new RuntimeException(e);
     }
@@ -176,13 +158,62 @@ native module where {
   }
 }
 
-main (packageName: outputDir: _) = do
-  knownTypes <- KnownTypesParser.parseKnownTypes "types.properties"
-  classLoader <- ClassLoader.current
-  convert knownTypes packageName outputDir
+parseArgs :: [String] -> Either String Options
+parseArgs args = go optDefault args where
+  optDefault = Options
+    { name = ""
+    , category = Package
+    , typesFilePath = "types.properties"
+    , outputDir="generated-sources" }
 
-main (packageName: _) = main [packageName, "generated-sources"]
+  go optSoFar [] = Options.validate optSoFar
+  go optSoFar ("-p" : packageName : rest)
+    = go optSoFar.{name = packageName, category = Package} rest
+  go optSoFar ("-c" : className : rest)
+    = go optSoFar.{name = className, category = Class} rest
+  go optSoFar ("-d" : directory : rest)
+    = go optSoFar.{outputDir = directory} rest
+  go optSoFar ("-t" : typesFilePath : rest)
+    = go optSoFar.{typesFilePath = typesFilePath} rest
+  go _ (invalidOption:_) = Left $ "Invalid option: " ++ invalidOption
 
-main [] = do
-  packageName <- prompt "Package name: "
-  main [packageName]
+data Category = Package | Class
+derive Show Category
+derive Eq Category
+
+data Options = Options
+  { name :: String
+  , category :: Category
+  , typesFilePath :: String
+  , outputDir :: String }
+  where
+
+  validate :: Options -> Either String Options
+  validate options
+    | null options.name = Left "Missing class or package name"
+    | null options.typesFilePath = Left "Missing types.properties file path"
+    | otherwise = Right options
+
+derive Show Options
+
+usage =
+  [ ("-c", "Class name")
+  , ("-p", "Package name")
+  , ("-t", "types.properties file path [Default: ./types.properties]")
+  , ("-d", "Output directory [Default: ./generated-sources]")
+  , ("-h", "Show this help")]
+
+printUsage = do
+  println "Options:"
+  for usage (\(name, desc) -> println $ name ++ " <" ++ desc ++ ">")
+
+main ("-h": _) = printUsage
+main args = do
+  let handle opts = do
+        knownTypes <- KnownTypesParser.parseKnownTypes opts.typesFilePath
+        let converter = if opts.category == Class then convertClass else convertPackage
+        converter knownTypes opts.name opts.outputDir
+      err message = do
+        stderr.println message
+        printUsage
+  either err handle $ parseArgs args

@@ -40,11 +40,9 @@ run {
     standardInput = System.in
     standardOutput = System.out
 
-    args = ["fj"]
-//    args = ["java.util.HashSet"]
-//    args = ["java.util"]
-    if (hasProperty("args")) {
-//        args project.args.split()
+    if (project.hasProperty("options")) {
+        String noptions = "-t $rootDir/src/dist/types.properties " + options
+        args noptions.split(' ')
     }
 }
 
