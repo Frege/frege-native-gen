@@ -37,15 +37,15 @@ run {
 
 defaultTasks "build"
 
-sourceCompatibility = 1.7
-targetCompatibility = 1.7
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 ext {
     baseVersion = "1.4"
     isSnapshot = true
     snapshotAppendix = "-SNAPSHOT"
     projectVersion = baseVersion + (isSnapshot ? snapshotAppendix : "")
-    fregeVersion = "3.23.370-g898bc8c"
+    fregeVersion = "3.23.422-ga05a487"
     guavaVersion = "18.0"
 }
 

@@ -69,6 +69,11 @@ classDeps knownTypes clazz =
       moduleName = intercalate "." nmParts
   in (moduleName, deps)
 
+convertClasses :: M.TreeMap String FregeType -> String -> String -> IO ()
+convertClasses knownTypes classNameCommaList outputDir = do  
+  classes = JArray.toList $ split classNameCommaList ","
+  for classes (\className -> convertClass knownTypes className outputDir) 
+
 convertClass :: M.TreeMap String FregeType -> String -> String -> IO ()
 convertClass knownTypes className outputDir = do
   clazzEither <- Class.forName className
@@ -162,7 +167,7 @@ parseArgs :: [String] -> Either String Options
 parseArgs args = go optDefault args where
   optDefault = Options
     { name = ""
-    , category = Package
+    , category = Types
     , typesFilePath = "types.properties"
     , outputDir="generated-sources" }
 
@@ -170,14 +175,14 @@ parseArgs args = go optDefault args where
   go optSoFar ("-p" : packageName : rest)
     = go optSoFar.{name = packageName, category = Package} rest
   go optSoFar ("-c" : className : rest)
-    = go optSoFar.{name = className, category = Class} rest
+    = go optSoFar.{name = optSoFar.name ++ (if optSoFar.name == "" then "" else ",") ++ className, category = Class} rest
   go optSoFar ("-d" : directory : rest)
     = go optSoFar.{outputDir = directory} rest
   go optSoFar ("-t" : typesFilePath : rest)
     = go optSoFar.{typesFilePath = typesFilePath} rest
   go _ (invalidOption:_) = Left $ "Invalid option: " ++ invalidOption
 
-data Category = Package | Class
+data Category = Package | Class | Types
 derive Show Category
 derive Eq Category
 
@@ -190,7 +195,6 @@ data Options = Options
 
   validate :: Options -> Either String Options
   validate options
-    | null options.name = Left "Missing class or package name"
     | null options.typesFilePath = Left "Missing types.properties file path"
     | otherwise = Right options
 
@@ -204,6 +208,12 @@ usage =
   , ("-h", "Show this help")]
 
 printUsage = do
+  println "Usage: frege-native-gen -t types.properties -d out/dir [-c class [-c class]|-p package|-h]"
+  println ""
+  println "  Generate *.fr files/types for java-classes xor java-package in output directory(-d)"
+  println "  Java-classes will be loaded from type.properties or -c <class> option. Java-packages"
+  println "  could be declared only via -p <package> option."
+  println ""
   println "Options:"
   for usage (\(name, desc) -> println $ name ++ " <" ++ desc ++ ">")
 
@@ -211,8 +221,10 @@ main ("-h": _) = printUsage
 main args = do
   let handle opts = do
         knownTypes <- KnownTypesParser.parseKnownTypes opts.typesFilePath
-        let converter = if opts.category == Class then convertClass else convertPackage
-        converter knownTypes opts.name opts.outputDir
+        case opts.category of 
+          Class   -> convertClasses knownTypes opts.name opts.outputDir 
+          Package ->  convertPackage knownTypes opts.name opts.outputDir
+          Types   ->  convertClasses knownTypes (foldl1  (\l r -> l ++ "," ++ r) $ M.keys knownTypes) opts.outputDir
       err message = do
         stderr.println message
         printUsage
