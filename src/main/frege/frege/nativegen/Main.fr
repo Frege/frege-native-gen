@@ -69,6 +69,10 @@ classDeps knownTypes clazz =
       moduleName = intercalate "." nmParts
   in (moduleName, deps)
 
+convertClasses :: M.TreeMap String FregeType -> [String] -> String -> IO ()
+convertClasses knownTypes classNames outputDir =
+  for classNames (\className -> convertClass knownTypes className outputDir)
+
 convertClass :: M.TreeMap String FregeType -> String -> String -> IO ()
 convertClass knownTypes className outputDir = do
   clazzEither <- Class.forName className
@@ -161,49 +165,51 @@ native module where {
 parseArgs :: [String] -> Either String Options
 parseArgs args = go optDefault args where
   optDefault = Options
-    { name = ""
-    , category = Package
+    { javaTypeInput = Class []
     , typesFilePath = "types.properties"
     , outputDir="generated-sources" }
 
   go optSoFar [] = Options.validate optSoFar
   go optSoFar ("-p" : packageName : rest)
-    = go optSoFar.{name = packageName, category = Package} rest
-  go optSoFar ("-c" : className : rest)
-    = go optSoFar.{name = className, category = Class} rest
+    = go optSoFar.{javaTypeInput = Package packageName} rest
+  go optSoFar ("-c" : classNames : rest)
+    = go optSoFar.{javaTypeInput = Class . toList $ split classNames ","} rest
   go optSoFar ("-d" : directory : rest)
     = go optSoFar.{outputDir = directory} rest
   go optSoFar ("-t" : typesFilePath : rest)
     = go optSoFar.{typesFilePath = typesFilePath} rest
   go _ (invalidOption:_) = Left $ "Invalid option: " ++ invalidOption
 
-data Category = Package | Class
-derive Show Category
-derive Eq Category
+data JavaTypeInput = Package String | Class [String]
+derive Show JavaTypeInput
+derive Eq JavaTypeInput
 
 data Options = Options
-  { name :: String
-  , category :: Category
+  { javaTypeInput :: JavaTypeInput
   , typesFilePath :: String
   , outputDir :: String }
   where
 
   validate :: Options -> Either String Options
   validate options
-    | null options.name = Left "Missing class or package name"
     | null options.typesFilePath = Left "Missing types.properties file path"
     | otherwise = Right options
 
 derive Show Options
 
 usage =
-  [ ("-c", "Class name")
-  , ("-p", "Package name")
+  [ ("-c", "Comma-separated Java class names")
+  , ("-p", "Java Package name")
   , ("-t", "types.properties file path [Default: ./types.properties]")
   , ("-d", "Output directory [Default: ./generated-sources]")
   , ("-h", "Show this help")]
 
 printUsage = do
+  println "Usage: java -cp \"lib/*:$JAVA_HOME/jre/lib/*\" frege.nativegen.Main <options (See below)>"
+  println ""
+  println "  Generate Frege modules for Java classes or for a Java package."
+  println "  The purity of Java types must be indicated in types.properties file."
+  println ""
   println "Options:"
   for usage (\(name, desc) -> println $ name ++ " <" ++ desc ++ ">")
 
@@ -211,8 +217,9 @@ main ("-h": _) = printUsage
 main args = do
   let handle opts = do
         knownTypes <- KnownTypesParser.parseKnownTypes opts.typesFilePath
-        let converter = if opts.category == Class then convertClass else convertPackage
-        converter knownTypes opts.name opts.outputDir
+        case opts.javaTypeInput of
+          Class classNames  -> convertClasses knownTypes classNames opts.outputDir
+          Package packageName ->  convertPackage knownTypes packageName opts.outputDir
       err message = do
         stderr.println message
         printUsage

@@ -45,7 +45,7 @@ ext {
     isSnapshot = true
     snapshotAppendix = "-SNAPSHOT"
     projectVersion = baseVersion + (isSnapshot ? snapshotAppendix : "")
-    fregeVersion = "3.23.370-g898bc8c"
+    fregeVersion = "3.23.450-SNAPSHOT"
     guavaVersion = "18.0"
 }
 
