@@ -69,10 +69,9 @@ classDeps knownTypes clazz =
       moduleName = intercalate "." nmParts
   in (moduleName, deps)
 
-convertClasses :: M.TreeMap String FregeType -> String -> String -> IO ()
-convertClasses knownTypes classNameCommaList outputDir = do  
-  classes = JArray.toList $ split classNameCommaList ","
-  for classes (\className -> convertClass knownTypes className outputDir) 
+convertClasses :: M.TreeMap String FregeType -> [String] -> String -> IO ()
+convertClasses knownTypes classNames outputDir =
+  for classNames (\className -> convertClass knownTypes className outputDir)
 
 convertClass :: M.TreeMap String FregeType -> String -> String -> IO ()
 convertClass knownTypes className outputDir = do
@@ -166,29 +165,27 @@ native module where {
 parseArgs :: [String] -> Either String Options
 parseArgs args = go optDefault args where
   optDefault = Options
-    { name = ""
-    , category = Types
+    { javaTypeInput = Class []
     , typesFilePath = "types.properties"
     , outputDir="generated-sources" }
 
   go optSoFar [] = Options.validate optSoFar
   go optSoFar ("-p" : packageName : rest)
-    = go optSoFar.{name = packageName, category = Package} rest
-  go optSoFar ("-c" : className : rest)
-    = go optSoFar.{name = optSoFar.name ++ (if optSoFar.name == "" then "" else ",") ++ className, category = Class} rest
+    = go optSoFar.{javaTypeInput = Package packageName} rest
+  go optSoFar ("-c" : classNames : rest)
+    = go optSoFar.{javaTypeInput = Class . toList $ split classNames ","} rest
   go optSoFar ("-d" : directory : rest)
     = go optSoFar.{outputDir = directory} rest
   go optSoFar ("-t" : typesFilePath : rest)
     = go optSoFar.{typesFilePath = typesFilePath} rest
   go _ (invalidOption:_) = Left $ "Invalid option: " ++ invalidOption
 
-data Category = Package | Class | Types
-derive Show Category
-derive Eq Category
+data JavaTypeInput = Package String | Class [String]
+derive Show JavaTypeInput
+derive Eq JavaTypeInput
 
 data Options = Options
-  { name :: String
-  , category :: Category
+  { javaTypeInput :: JavaTypeInput
   , typesFilePath :: String
   , outputDir :: String }
   where
@@ -201,18 +198,17 @@ data Options = Options
 derive Show Options
 
 usage =
-  [ ("-c", "Class name")
-  , ("-p", "Package name")
+  [ ("-c", "Comma-separated Java class names")
+  , ("-p", "Java Package name")
   , ("-t", "types.properties file path [Default: ./types.properties]")
   , ("-d", "Output directory [Default: ./generated-sources]")
   , ("-h", "Show this help")]
 
 printUsage = do
-  println "Usage: frege-native-gen -t types.properties -d out/dir [-c class [-c class]|-p package|-h]"
+  println "Usage: java -cp \"lib/*:$JAVA_HOME/jre/lib/*\" frege.nativegen.Main <options (See below)>"
   println ""
-  println "  Generate *.fr files/types for java-classes xor java-package in output directory(-d)"
-  println "  Java-classes will be loaded from type.properties or -c <class> option. Java-packages"
-  println "  could be declared only via -p <package> option."
+  println "  Generate Frege modules for Java classes or for a Java package."
+  println "  The purity of Java types must be indicated in types.properties file."
   println ""
   println "Options:"
   for usage (\(name, desc) -> println $ name ++ " <" ++ desc ++ ">")
@@ -221,10 +217,9 @@ main ("-h": _) = printUsage
 main args = do
   let handle opts = do
         knownTypes <- KnownTypesParser.parseKnownTypes opts.typesFilePath
-        case opts.category of 
-          Class   -> convertClasses knownTypes opts.name opts.outputDir 
-          Package ->  convertPackage knownTypes opts.name opts.outputDir
-          Types   ->  convertClasses knownTypes (foldl1  (\l r -> l ++ "," ++ r) $ M.keys knownTypes) opts.outputDir
+        case opts.javaTypeInput of
+          Class classNames  -> convertClasses knownTypes classNames opts.outputDir
+          Package packageName ->  convertPackage knownTypes packageName opts.outputDir
       err message = do
         stderr.println message
         printUsage
