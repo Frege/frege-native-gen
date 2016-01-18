@@ -375,7 +375,7 @@ void=pure,()
       This would convert all the classes in `java.util` package including sub packages and create corresponding Frege modules (one Frege module per package).
       The generated sources will be in `generated-sources` folder.
    
-      * Run `java -cp "lib/*:$JAVA_HOME/jre/lib/*" frege.nativegen.Main -c java.util.List` for a specific class.
+      * Run `java -cp "lib/*:$JAVA_HOME/jre/lib/*" frege.nativegen.Main -c java.util.List,java.util.Set` for a specific set of classes.
       * To generate for classes other than those in JDK, add the respective library in the classpath:
       `java -cp "/path/to/guava.jar:lib/*" frege.nativegen.Main -p com.google.common.collect`
       * Run `java -cp "lib/*:$JAVA_HOME/jre/lib/*" frege.nativegen.Main -h` for help.
@@ -385,7 +385,7 @@ void=pure,()
 From project source root,
 
 * For all the classes in a package: `./gradlew run -Poptions="-p java.util"`
-* For a specific class: `./gradlew run -Poptions="-c java.util.List"`
+* For a specific set of classes: `./gradlew run -Poptions="-c java.util.List,java.util.Set"`
 * To run with different *types.properties*: `./gradlew run -Poptions="-c java.util.List -t /path/to/types.properties"`
 * For help: `./gradlew run -Poptions="-h"`
 
