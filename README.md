@@ -228,7 +228,7 @@ data FileInputStream = native java.io.FileInputStream where
   native skip :: MutableIO FileInputStream -> Long -> IO Long throws IOException
 ```
 
-##types.properties##
+## types.properties ##
 
 * All the examples above use a properties file which indicates all the Java classes, their purity and their optional new names in Frege code.
 The name used here as the key is the class name returned by `java.lang.Class.getName()`
@@ -361,7 +361,7 @@ short=pure,Short
 void=pure,()
 ```
 
-##How to run##
+## How to run ##
 
 1. Download and extract `frege-native-gen-<version>.zip` from [releases](https://github.com/Frege/frege-native-gen/releases). 
    The `types.properties` is included in the zip.
@@ -380,7 +380,7 @@ void=pure,()
       `java -cp "/path/to/guava.jar:lib/*" frege.nativegen.Main -p com.google.common.collect`
       * Run `java -cp "lib/*:$JAVA_HOME/jre/lib/*" frege.nativegen.Main -h` for help.
       
-###How to run with Gradle###
+### How to run with Gradle ###
 
 From project source root,
 
