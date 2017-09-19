@@ -1,4 +1,4 @@
-#Frege code generator for Java classes#
+# Frege code generator for Java classes #
 [![Build Status](https://travis-ci.org/Frege/frege-native-gen.svg)](https://travis-ci.org/Frege/frege-native-gen)
 
 This project aims to reduce the manual effort for defining native bindings for Java classes in Frege. 
